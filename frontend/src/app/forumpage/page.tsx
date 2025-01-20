@@ -4,7 +4,10 @@ import React, { useEffect, useState } from "react"
 import { Typography, Container, Button, TextField, InputAdornment, Drawer, Box, List, ListItemButton, ListItemIcon,
     ListItemText, ListSubheader, Dialog, DialogTitle, FormControl, RadioGroup, Radio, FormControlLabel,
     Stack,
-    Chip} from "@mui/material"
+    Chip,
+    DialogActions,
+    Alert,
+    AlertTitle} from "@mui/material"
 import { AccountCircle, AddBox, Close, Description, Forum, Logout, Search, Settings, Title, Tune, WebStories } from "@mui/icons-material"
 import { useRouter } from "next/navigation"
 
@@ -20,11 +23,12 @@ export default function forum() {
     const [description, setDescription] = useState<string>('')
     const [keywords, setKeywords] = useState<string[]>([])
     const [keywordsText, setKeywordsText] = useState<string>('')
+    const [newPostError, setNewPostError] = useState<boolean>(false)
 
     useEffect(() => {
         const verify_user : () => void = async () => {
             try {
-                const response = await fetch("http://192.168.1.9:3001/verify", {
+                const response = await fetch("http://localhost:3001/verify", {
                     method: "POST",
                     headers: {
                         'Content-Type' : 'application/json'
@@ -48,6 +52,37 @@ export default function forum() {
         }
         verify_user()
     }, [])
+
+    const handleNewPost : () => void = async () => {
+        if (title == '' || description == '' || keywords.length == 0) {
+            setNewPostError(true)
+            return
+        } else {
+            try {
+                const response = await fetch("http://localhost:3001/new-post", {
+                    method : "POST",
+                    headers: {
+                        'Content-Type' : 'application/json'
+                    },
+                    body: JSON.stringify({
+                        'title': title,
+                        'username' : user,
+                        'category' : category,
+                        'keywords' : keywords.reduce((a, b) => a.concat(',').concat(b)),
+                        'description' : description
+                    })
+                })
+
+                if (response.ok) {
+                    console.log("yay")
+                } else {
+                    console.log("ay")
+                }
+            } catch (error) {
+                console.error(error)
+            }
+        }
+    }
 
     const drawerList = (
         <Box sx={{width: 200}} className='flex flex-col'>
@@ -174,10 +209,12 @@ export default function forum() {
 
                         <Box className='my-10'>
                             <Typography variant="body1" className="font-bold">Keywords</Typography>
-                            <TextField size="small" placeholder="Enter keywords. Press enter to set keyword." fullWidth value={keywordsText}
+                            <TextField size="small" placeholder="Enter keywords. Press enter to set keyword. No commas are allowed." fullWidth value={keywordsText}
+                                error={keywordsText.includes(",")}
+                                helperText={keywordsText != '' ? "Enter keywords. Press enter to set keyword. No commas are allowed." : ''}
                                 onChange={e => setKeywordsText(e.target.value)}
                                 onKeyDown={e => {
-                                    if (e.key == 'Enter' && keywordsText.trim() != '') {
+                                    if (e.key == 'Enter' && keywordsText.trim() != '' && !keywordsText.includes(",")) {
                                         keywords.push(keywordsText.trim())
                                         setKeywordsText('')
                                     }
@@ -218,6 +255,20 @@ export default function forum() {
                                     }
                                 }}>
                             </TextField>
+                        </Box>
+                        {
+                            newPostError &&
+                            <Alert severity="error">
+                                <AlertTitle>Error creating new post:</AlertTitle>
+                                <Typography variant="body2">Please ensure that you have a title, description, and at least one keyword tag that allows people
+                                    to search for this topic.
+                                </Typography>
+                            </Alert>
+                        }
+                        <Box>
+                            <DialogActions>
+                                <Button onClick={handleNewPost}>Post</Button>
+                            </DialogActions>
                         </Box>
                     </Box>
                 </Dialog>

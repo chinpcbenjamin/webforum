@@ -4,6 +4,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/chinpcbenjamin/webforum/backend/internal/db"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -32,6 +33,12 @@ func VerifyToken(jwt_token string) bool {
 	}
 
 	claims, _ := token.Claims.(jwt.MapClaims)
+	user, _ := claims["subject"].(string)
+
+	if !db.Query_User_Exists(user) {
+		return false
+	}
+
 	expiry, _ := claims["expiry"].(float64)
 	expiryInt := int64(expiry)
 

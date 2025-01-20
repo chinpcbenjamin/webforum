@@ -35,10 +35,11 @@ func main() {
 		w.Write([]byte("Server is running"))
 	})
 
-	db.Initialise_database()
+	db.Initialise_Database()
 	r.Post("/new-user", handlers.AddNewUserRequest(db.Get_Database()))
 	r.Post("/sign-in", handlers.UserSignIn(db.Get_Database()))
 	r.Post("/verify", handlers.VerifyUser(db.Get_Database()))
+	r.Post("/new-post", handlers.AddNewPost(db.Get_Database()))
 
 	http.ListenAndServe(":3001", r)
 }
