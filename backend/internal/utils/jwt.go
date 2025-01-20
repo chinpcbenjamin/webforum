@@ -32,11 +32,19 @@ func VerifyToken(jwt_token string) bool {
 	}
 
 	claims, _ := token.Claims.(jwt.MapClaims)
-	expiry, _ := claims["expiry"].(int64)
+	expiry, _ := claims["expiry"].(float64)
+	expiryInt := int64(expiry)
 
-	if time.Now().Unix() > expiry {
-		return false
-	}
+	return time.Now().Unix() < expiryInt
+}
 
-	return true
+func RetrieveUserFromToken(jwt_token string) string {
+	token, _ := jwt.Parse(jwt_token, func(token *jwt.Token) (interface{}, error) {
+		return jwt_key, nil
+	})
+
+	claims, _ := token.Claims.(jwt.MapClaims)
+	user, _ := claims["subject"].(string)
+
+	return user
 }

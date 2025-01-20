@@ -26,8 +26,8 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"}, //allows requests from my frontend. may need to change
-		AllowedMethods:   []string{"POST"},
-		AllowedHeaders:   []string{"Content-Type"},
+		AllowedMethods:   []string{"POST", "GET"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}))
 
@@ -38,6 +38,7 @@ func main() {
 	db.Initialise_database()
 	r.Post("/new-user", handlers.AddNewUserRequest(db.Get_Database()))
 	r.Post("/sign-in", handlers.UserSignIn(db.Get_Database()))
+	r.Post("/verify", handlers.VerifyUser(db.Get_Database()))
 
 	http.ListenAndServe(":3001", r)
 }

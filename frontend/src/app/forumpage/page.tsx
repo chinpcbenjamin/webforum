@@ -1,13 +1,43 @@
 'use client'
 
-import React from "react"
+import React, { useEffect, useState } from "react"
 import { Typography, Container, Button, TextField, InputAdornment, Drawer, Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, ListSubheader} from "@mui/material"
 import { Forum, Logout, Search, Settings, Tune, WebStories } from "@mui/icons-material"
 import { useRouter } from "next/navigation"
 
 export default function forum() {
-    const [drawerOpen, setDrawerOpen] = React.useState<boolean>(false)
+    const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
     const router = useRouter()
+    const [user, setUser] = useState<string>('')
+
+    useEffect(() => {
+        const verify_user : () => void = async () => {
+            try {
+                const response = await fetch("http://192.168.1.9:3001/verify", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type' : 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "token": localStorage.getItem("token")
+                    })
+                })
+    
+                if (!response.ok) {
+                    alert("Error. Invalid sign in credentials. Please sign in again.")
+                    router.push("../")
+                } else {
+                    const a = await response.json()
+                    setUser(a.username)
+                }
+    
+            } catch (error) {
+                console.error(error)
+            }
+        }
+        verify_user()
+    }, [])
+
 
     const drawerList = (
         <Box sx={{width: 200}} className='flex' >

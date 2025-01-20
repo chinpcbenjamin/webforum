@@ -70,10 +70,8 @@ export default function LoginPage() {
                     setMessageType(1)
                     setMessageAlert(true)
                     setMessage("Account created successfully. Please wait while we sign you in.")
-                    
-                    // cache login token
-
-                    // move onto next page while signed in
+                    // after logging in, attempt sign in
+                    attempt_user_sign_in()                    
                 } else {
                     setMessageType(0)
                     setMessageAlert(true)
@@ -107,10 +105,12 @@ export default function LoginPage() {
             })
 
             if (response.ok) {
-                console.log(response)
+                const a = await response.json()
+                localStorage.setItem("token", a.token)
                 setMessageType(1)
                 setMessageAlert(true)
                 setMessage("Sign-in successful. Please wait.")
+                router.push('../forumpage/')
             } else {
                 setMessageType(0)
                 setMessageAlert(true)
@@ -131,7 +131,7 @@ export default function LoginPage() {
 
     const get_cookie_token : () => void = async () => {
         try {
-            const response = await fetch("http://localhost:3001/token")
+            const response = await fetch("http://192.168.1.9:3001/token")
         } catch (error) {
             console.log(error)
         }

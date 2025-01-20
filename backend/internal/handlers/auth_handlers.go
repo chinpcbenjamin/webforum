@@ -6,12 +6,17 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/chinpcbenjamin/webforum/backend/internal/utils"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserRequest struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type VerifyRequest struct {
+	Token string `json:"token"`
 }
 
 func AddNewUserRequest(db *sql.DB) http.HandlerFunc {
@@ -54,8 +59,20 @@ func AddNewUserRequest(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		//successfully created database entry, so get the JWT key
+		// jwtToken, err := utils.CreateToken(request.Username)
+		// if err != nil {
+		// 	http.Error(writer, "Failed to add new user", http.StatusInternalServerError)
+		// 	return
+		// }
+
+		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusCreated)
-		writer.Write([]byte("User account created"))
+		// response := RespBody{
+		// 	Message: "User account created",
+		// 	Token:   jwtToken,
+		// }
+		// json.NewEncoder(writer).Encode(response)
 	}
 }
 
@@ -93,7 +110,38 @@ func UserSignIn(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		// user authenticated. generate token, then add cookies
+		jwtToken, err := utils.CreateToken(request.Username)
+		if err != nil {
+			http.Error(writer, "Failed to add new user", http.StatusInternalServerError)
+			return
+		}
+
+		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusOK)
-		writer.Write([]byte("Successful login"))
+		json.NewEncoder(writer).Encode(map[string]string{
+			"token": jwtToken,
+		})
+	}
+}
+
+func VerifyUser(db *sql.DB) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request_http *http.Request) {
+		var request VerifyRequest
+		if err := json.NewDecoder(request_http.Body).Decode(&request); err != nil {
+			http.Error(writer, "Invalid Request Body", http.StatusBadRequest)
+			return
+		}
+
+		if utils.VerifyToken(request.Token) {
+			user := utils.RetrieveUserFromToken(request.Token)
+			writer.Header().Set("Content-Type", "application/json")
+			writer.WriteHeader(http.StatusOK)
+			json.NewEncoder(writer).Encode(map[string]string{
+				"username": user,
+			})
+		} else {
+			writer.WriteHeader(http.StatusUnauthorized)
+		}
 	}
 }
