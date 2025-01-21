@@ -3,11 +3,8 @@
 import React, { useEffect, useState } from "react"
 import { Typography, Container, Button, TextField, InputAdornment, Drawer, Box, List, ListItemButton, ListItemIcon,
     ListItemText, ListSubheader, Dialog, DialogTitle, FormControl, RadioGroup, Radio, FormControlLabel,
-    Stack,
-    Chip,
-    DialogActions,
-    Alert,
-    AlertTitle} from "@mui/material"
+    Stack, Chip, DialogActions, Alert, AlertTitle, 
+    ListItem} from "@mui/material"
 import { AccountCircle, AddBox, Close, Description, Forum, Logout, Search, Settings, Title, Tune, WebStories } from "@mui/icons-material"
 import { useRouter } from "next/navigation"
 
@@ -24,6 +21,10 @@ export default function forum() {
     const [keywords, setKeywords] = useState<string[]>([])
     const [keywordsText, setKeywordsText] = useState<string>('')
     const [newPostError, setNewPostError] = useState<boolean>(false)
+
+    const [data, setData] = useState<any[]>([])
+
+    const bgColors : string[] = ['yellowgreen', 'wheat', 'turquoise', 'thistle', 'tan', 'skyblue', 'powderblue', 'plum', 'palevioletred', 'olive']
 
     useEffect(() => {
         const verify_user : () => void = async () => {
@@ -53,6 +54,24 @@ export default function forum() {
         verify_user()
     }, [])
 
+    const retrieveForumData : () => void = async () => {
+        try {
+            const response = await fetch("http://localhost:3001/get-forum-data", {
+                method: "POST",
+            })
+            if (response.ok) {
+                const a = await response.json()
+                setData(a.data)
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    useEffect(() => {
+        retrieveForumData()
+    }, [])
+
     const handleNewPost : () => void = async () => {
         if (title == '' || description == '' || keywords.length == 0) {
             setNewPostError(true)
@@ -74,9 +93,15 @@ export default function forum() {
                 })
 
                 if (response.ok) {
-                    console.log("yay")
+                    setPopup('')
+                    setTitle('')
+                    setCategory('Suggestion')
+                    setDescription('')
+                    setKeywords([])
+                    setKeywordsText('')
+                    retrieveForumData()
                 } else {
-                    console.log("ay")
+                    setNewPostError(true)
                 }
             } catch (error) {
                 console.error(error)
@@ -156,9 +181,31 @@ export default function forum() {
                 </Button>
             </Box>
             
-            <Container className="flex items-center justify-center">
-                <Typography>test</Typography>
-            </Container>
+            {/* List of Forum Content */}
+            {
+                <Box className="flex flex-row justify-center" sx={{minWidth:"100%"}}>
+                    <List sx={{minWidth:"40%"}}>
+                        {
+                            data.length != 0 &&
+                            data.map((x, index) => 
+                                <ListItem key={index} sx={{justifyItems: 'center', minWidth:'100%', width:'100%'}}>
+                                    <Box className="rounded-xl p-3 text-white" sx={{minWidth:"100%", backgroundColor:bgColors[Math.floor(Math.random() * 10)] }}>
+                                        <Typography className="font-bold "variant="h3">{x.title}</Typography>
+                                        <Typography className="mb-5" variant="body1">by: {x.username}</Typography>
+                                        <Stack direction='row' spacing={1}>
+                                        {
+                                            String(x.keywords).split(",").map((y, id) => (
+                                                <Chip key={id} label={y}></Chip>
+                                            ))
+                                        }
+                                        </Stack>
+                                    </Box>
+                                </ListItem>
+                            )
+                        }
+                    </List>
+                </Box>
+            }
 
             {/* Right Sidebar */}
             <Drawer

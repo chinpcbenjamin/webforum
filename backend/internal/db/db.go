@@ -50,7 +50,9 @@ func Initialise_Database() {
 		title TEXT NOT NULL,
 		username TEXT NOT NULL,
 		FOREIGN KEY (title, username)
-			REFERENCES posts (title, username),
+			REFERENCES posts (title, username)
+			ON DELETE CASCADE
+			ON UPDATE CASCADE,
 		PRIMARY KEY (commenter, timing, title, username)
 	);`
 
