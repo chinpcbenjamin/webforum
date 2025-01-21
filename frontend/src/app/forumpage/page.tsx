@@ -3,8 +3,7 @@
 import React, { useEffect, useState } from "react"
 import { Typography, Container, Button, TextField, InputAdornment, Drawer, Box, List, ListItemButton, ListItemIcon,
     ListItemText, ListSubheader, Dialog, DialogTitle, FormControl, RadioGroup, Radio, FormControlLabel,
-    Stack, Chip, DialogActions, Alert, AlertTitle, 
-    ListItem} from "@mui/material"
+    Stack, Chip, DialogActions, Alert, AlertTitle, ListItem, Paper, Menu, Checkbox, FormGroup} from "@mui/material"
 import { AccountCircle, AddBox, Close, Description, Forum, Logout, Search, Settings, Title, Tune, WebStories } from "@mui/icons-material"
 import { useRouter } from "next/navigation"
 
@@ -23,8 +22,11 @@ export default function forum() {
     const [newPostError, setNewPostError] = useState<boolean>(false)
 
     const [data, setData] = useState<any[]>([])
-
+    const [postColours, setPostColours] = useState<string[]>([])
     const bgColors : string[] = ['yellowgreen', 'wheat', 'turquoise', 'thistle', 'tan', 'skyblue', 'powderblue', 'plum', 'palevioletred', 'olive']
+
+    const [filterMenuAnchor, setFilterMenuAnchor] = useState<null|HTMLElement>(null)
+    const [filterArray, setFilterArray] = useState<boolean[]>([false, false, false])
 
     useEffect(() => {
         const verify_user : () => void = async () => {
@@ -57,11 +59,12 @@ export default function forum() {
     const retrieveForumData : () => void = async () => {
         try {
             const response = await fetch("http://localhost:3001/get-forum-data", {
-                method: "POST",
+                method: "GET",
             })
             if (response.ok) {
                 const a = await response.json()
                 setData(a.data)
+                a.data.forEach((x : any) => postColours.push(bgColors[Math.floor(Math.random() * 10)]))
             }
         } catch (error) {
             console.error(error)
@@ -108,6 +111,14 @@ export default function forum() {
             }
         }
     }
+
+    const handleCheckboxChange = (index: number) => {
+        setFilterArray(prev => {
+            const newFilterArray = [...prev];
+            newFilterArray[index] = !newFilterArray[index];
+            return newFilterArray;
+        });
+    };
 
     const drawerList = (
         <Box sx={{width: 200}} className='flex flex-col'>
@@ -158,7 +169,7 @@ export default function forum() {
                     className="my-5 pl-10 pr-1"
                     fullWidth
                     variant="outlined"
-                    placeholder="Search for a topic"
+                    placeholder="Search for a topic by its title, or by its keywords"
                     slotProps={{
                         input: {
                             startAdornment: (
@@ -168,7 +179,7 @@ export default function forum() {
                             ),
                             endAdornment: (
                                 <InputAdornment position="end">
-                                    <Button color="inherit" size="large">
+                                    <Button color="inherit" size="large" onClick={e => {setFilterMenuAnchor(e.currentTarget) ; setPopup('filter')}}>
                                         <Tune/>
                                     </Button>
                                 </InputAdornment>
@@ -189,7 +200,8 @@ export default function forum() {
                             data.length != 0 &&
                             data.map((x, index) => 
                                 <ListItem key={index} sx={{justifyItems: 'center', minWidth:'100%', width:'100%'}}>
-                                    <Box className="rounded-xl p-3 text-white" sx={{minWidth:"100%", backgroundColor:bgColors[Math.floor(Math.random() * 10)] }}>
+                                    <Paper className="rounded-xl p-3 text-white" elevation={5}
+                                        sx={{minWidth:"100%", backgroundColor:postColours[index] }}>
                                         <Typography className="font-bold "variant="h3">{x.title}</Typography>
                                         <Typography className="mb-5" variant="body1">by: {x.username}</Typography>
                                         <Stack direction='row' spacing={1}>
@@ -199,7 +211,7 @@ export default function forum() {
                                             ))
                                         }
                                         </Stack>
-                                    </Box>
+                                    </Paper>
                                 </ListItem>
                             )
                         }
@@ -319,6 +331,19 @@ export default function forum() {
                         </Box>
                     </Box>
                 </Dialog>
+            }
+
+            {/* Filter Options Dialog */}
+            {
+                <Menu open={popup == 'filter'} anchorEl={filterMenuAnchor}
+                    onClose={() => {setFilterMenuAnchor(null); setPopup('')}} disableScrollLock>
+                <FormGroup sx={{minWidth:320, padding:2, gap:2}}>
+                    <FormControlLabel label='Suggestion'control={<Checkbox onClick={() => setFilterArray([!filterArray[0], filterArray[1], filterArray[2]])} />}/>
+                    <FormControlLabel label='Problem' control={<Checkbox onClick={() => setFilterArray([filterArray[0], !filterArray[1], filterArray[2]])}/>}/>
+                    <FormControlLabel label='General' control={<Checkbox onClick={() => setFilterArray([filterArray[0], filterArray[1], !filterArray[2]])}/>}/>
+                </FormGroup>
+            </Menu>
+
             }
         </Box>
     )
