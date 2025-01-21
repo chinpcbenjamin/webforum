@@ -40,9 +40,10 @@ func main() {
 	r.Post("/sign-in", handlers.UserSignIn(db.Get_Database()))
 	r.Post("/verify", handlers.VerifyUser(db.Get_Database()))
 	r.Post("/new-post", handlers.AddNewPost(db.Get_Database()))
+	r.Post("/new-comment", handlers.AddNewComment(db.Get_Database()))
 
 	r.Get("/get-forum-data", handlers.GetAllForumData(db.Get_Database()))
-	r.Get("/get-filtered")
+	r.Get("/get-comments", handlers.GetCommentsForPost(db.Get_Database()))
 
 	http.ListenAndServe(":3001", r)
 }

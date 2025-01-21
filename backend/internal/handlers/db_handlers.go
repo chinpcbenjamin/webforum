@@ -31,18 +31,8 @@ func AddNewPost(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusCreated)
 	}
-}
-
-type ForumPostReturn struct {
-	Title       string    `json:"title"`
-	Username    string    `json:"username"`
-	Category    string    `json:"category"`
-	Keywords    string    `json:"keywords"`
-	Description string    `json:"description"`
-	Timing      time.Time `json:"time"`
 }
 
 func GetAllForumData(db *sql.DB) http.HandlerFunc {
@@ -58,6 +48,15 @@ func GetAllForumData(db *sql.DB) http.HandlerFunc {
 		var keywords string
 		var description string
 		var timing time.Time
+
+		type ForumPostReturn struct {
+			Title       string    `json:"title"`
+			Username    string    `json:"username"`
+			Category    string    `json:"category"`
+			Keywords    string    `json:"keywords"`
+			Description string    `json:"description"`
+			Timing      time.Time `json:"time"`
+		}
 
 		var data []ForumPostReturn
 
@@ -76,6 +75,78 @@ func GetAllForumData(db *sql.DB) http.HandlerFunc {
 			writer.Header().Set("Content-Type", "application/json")
 			writer.WriteHeader(http.StatusOK)
 			json.NewEncoder(writer).Encode(map[string][]ForumPostReturn{
+				"data": data,
+			})
+		}
+
+	}
+}
+
+type NewComment struct {
+	Commenter string `json:"commenter"`
+	Comment   string `json:"comment"`
+	Title     string `json:"title"`
+	Username  string `json:"username"`
+}
+
+func AddNewComment(db *sql.DB) http.HandlerFunc {
+	return func(writer http.ResponseWriter, http_request *http.Request) {
+		var new_comment NewComment
+		err := json.NewDecoder(http_request.Body).Decode(&new_comment)
+		if err != nil {
+			http.Error(writer, "Invalid Request Body", http.StatusBadRequest)
+			return
+		}
+
+		_, err = db.Exec("INSERT INTO comments VALUES (?, ?, ?, ?, ?)",
+			new_comment.Commenter, new_comment.Comment, time.Now(), new_comment.Title, new_comment.Username,
+		)
+
+		if err != nil {
+			http.Error(writer, "Could not insert into database", http.StatusInternalServerError)
+		}
+
+		writer.WriteHeader(http.StatusCreated)
+	}
+}
+
+func GetCommentsForPost(db *sql.DB) http.HandlerFunc {
+	return func(writer http.ResponseWriter, http_request *http.Request) {
+		title := http_request.URL.Query().Get("title")
+		username := http_request.URL.Query().Get("username")
+
+		rows, err := db.Query("SELECT commenter, comment, timing FROM comments WHERE title = ? AND username = ?", title, username)
+		if err == sql.ErrNoRows {
+			http.Error(writer, "No forum data available", http.StatusNoContent)
+		}
+
+		var commenter string
+		var comment string
+		var timing time.Time
+
+		type commentReturn struct {
+			Commenter string    `json:"commenter"`
+			Comment   string    `json:"comment"`
+			Timing    time.Time `json:"timing"`
+		}
+
+		var data []commentReturn
+
+		for rows.Next() {
+			err = rows.Scan(&commenter, &comment, &timing)
+			if err != nil {
+				http.Error(writer, "Failed to scan", http.StatusInternalServerError)
+			}
+			var comments commentReturn = commentReturn{commenter, comment, timing}
+			data = append(data, comments)
+		}
+
+		if len(data) == 0 {
+			http.Error(writer, "Failed to get posts", http.StatusInternalServerError)
+		} else {
+			writer.Header().Set("Content-Type", "application/json")
+			writer.WriteHeader(http.StatusOK)
+			json.NewEncoder(writer).Encode(map[string][]commentReturn{
 				"data": data,
 			})
 		}

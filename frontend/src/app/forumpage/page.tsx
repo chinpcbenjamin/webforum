@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from "react"
 import { Typography, Container, Button, TextField, InputAdornment, Drawer, Box, List, ListItemButton, ListItemIcon,
     ListItemText, ListSubheader, Dialog, DialogTitle, FormControl, RadioGroup, Radio, FormControlLabel,
-    Stack, Chip, DialogActions, Alert, AlertTitle, ListItem, Paper, Menu, Checkbox, FormGroup} from "@mui/material"
-import { AccountCircle, AddBox, Close, Description, Forum, Logout, Search, Settings, Title, Tune, WebStories } from "@mui/icons-material"
+    Stack, Chip, DialogActions, Alert, AlertTitle, ListItem, Paper, Menu, Checkbox, FormGroup, Avatar,
+    Backdrop,
+    CircularProgress} from "@mui/material"
+import { AccountCircle, AddBox, AddComment, Close, Description, Forum, Logout, Search, Send, Settings, Title, Tune, WebStories } from "@mui/icons-material"
 import { useRouter } from "next/navigation"
 
 export default function forum() {
@@ -27,6 +29,13 @@ export default function forum() {
 
     const [filterMenuAnchor, setFilterMenuAnchor] = useState<null|HTMLElement>(null)
     const [filterArray, setFilterArray] = useState<boolean[]>([false, false, false])
+
+    const [currPostIndex, setCurrPostIndex] = useState<number>(-1)
+    const [commentText, setCommentText] = useState<string>('')
+    const [commentData, setCommentData] = useState<any[]>([])
+    const [commentError, setCommentError] = useState<boolean>(false)
+
+    const [loading, setLoading] = useState<boolean>(false)
 
     useEffect(() => {
         const verify_user : () => void = async () => {
@@ -56,6 +65,12 @@ export default function forum() {
         verify_user()
     }, [])
 
+    const handlePostClick = async (index : number) => {
+        setCurrPostIndex(index);
+        await getCurrPostComments(index);
+        setPopup("post");
+    }
+
     const retrieveForumData : () => void = async () => {
         try {
             const response = await fetch("http://localhost:3001/get-forum-data", {
@@ -76,7 +91,7 @@ export default function forum() {
     }, [])
 
     const handleNewPost : () => void = async () => {
-        if (title == '' || description == '' || keywords.length == 0) {
+        if (title.trim() == '' || description.trim() == '' || keywords.length == 0) {
             setNewPostError(true)
             return
         } else {
@@ -87,11 +102,11 @@ export default function forum() {
                         'Content-Type' : 'application/json'
                     },
                     body: JSON.stringify({
-                        'title': title,
+                        'title': title.trim(),
                         'username' : user,
                         'category' : category,
                         'keywords' : keywords.reduce((a, b) => a.concat(',').concat(b)),
-                        'description' : description
+                        'description' : description.trim()
                     })
                 })
 
@@ -112,13 +127,60 @@ export default function forum() {
         }
     }
 
-    const handleCheckboxChange = (index: number) => {
-        setFilterArray(prev => {
-            const newFilterArray = [...prev];
-            newFilterArray[index] = !newFilterArray[index];
-            return newFilterArray;
-        });
-    };
+    const handleNewComment = async (index : number) => {
+        if (commentText.trim() == "") {
+            setCommentError(true)
+        } else {
+            try {
+                const response = await fetch("http://localhost:3001/new-comment", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type' : 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "commenter" : user,
+                        "comment" : commentText.trim(),
+                        "title" : data[currPostIndex].title,
+                        "username" : data[currPostIndex].username
+                    })
+                })
+
+                if (response.ok) {
+                    setCommentText('')
+                    getCurrPostComments(index)
+                    setCommentError(false)
+                } else {
+                    setCommentError(true)
+                }
+            } catch (error) {
+                console.error(error)
+            }
+        }
+    }
+
+    const getCurrPostComments = async (index : number) => {
+        if (!data[currPostIndex]) {
+            return
+        }
+        try {
+            setLoading(true)
+            const response = await fetch(`http://localhost:3001/get-comments?title=${data[index].title}&username=${data[index].username}`, {
+                method: "GET"
+            })
+            if (response.ok) {
+                const a = await response.json()
+                setCommentData(a.data)
+                setLoading(false)
+                return true
+            } else {
+                setCommentData([])
+                setLoading(false)
+                return false
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
 
     const drawerList = (
         <Box sx={{width: 200}} className='flex flex-col'>
@@ -174,13 +236,15 @@ export default function forum() {
                         input: {
                             startAdornment: (
                                 <InputAdornment position="start">
-                                    <Search/>
+                                    <Button color="inherit" size="large" onClick={e => {setFilterMenuAnchor(e.currentTarget) ; setPopup('filter')}}>
+                                        <Tune/>
+                                    </Button>
                                 </InputAdornment>
                             ),
                             endAdornment: (
                                 <InputAdornment position="end">
-                                    <Button color="inherit" size="large" onClick={e => {setFilterMenuAnchor(e.currentTarget) ; setPopup('filter')}}>
-                                        <Tune/>
+                                    <Button color='inherit'>
+                                        <Search/>
                                     </Button>
                                 </InputAdornment>
                             )
@@ -201,13 +265,15 @@ export default function forum() {
                             data.map((x, index) => 
                                 <ListItem key={index} sx={{justifyItems: 'center', minWidth:'100%', width:'100%'}}>
                                     <Paper className="rounded-xl p-3 text-white" elevation={5}
+                                        onClick={() => { handlePostClick(index) }}
                                         sx={{minWidth:"100%", backgroundColor:postColours[index] }}>
                                         <Typography className="font-bold "variant="h3">{x.title}</Typography>
                                         <Typography className="mb-5" variant="body1">by: {x.username}</Typography>
                                         <Stack direction='row' spacing={1}>
+                                            <Chip color="info" className="font-bold" label={x.category}></Chip>
                                         {
                                             String(x.keywords).split(",").map((y, id) => (
-                                                <Chip key={id} label={y}></Chip>
+                                                <Chip sx={{backgroundColor:'whitesmoke'}} className="font-bold" key={id} label={y}></Chip>
                                             ))
                                         }
                                         </Stack>
@@ -231,7 +297,7 @@ export default function forum() {
             {
                 <Dialog open={popup == 'newPost'} maxWidth='lg' fullWidth>
                     <Box sx={{display: 'flex', justifyContent:'flex-end'}}>
-                        <Button onClick={() => setPopup('')} sx={{justifySelf:'end'}}>
+                        <Button color='inherit' onClick={() => setPopup('')} sx={{justifySelf:'end'}}>
                             <Close/>
                         </Button>
                     </Box>
@@ -337,14 +403,99 @@ export default function forum() {
             {
                 <Menu open={popup == 'filter'} anchorEl={filterMenuAnchor}
                     onClose={() => {setFilterMenuAnchor(null); setPopup('')}} disableScrollLock>
-                <FormGroup sx={{minWidth:320, padding:2, gap:2}}>
-                    <FormControlLabel label='Suggestion'control={<Checkbox onClick={() => setFilterArray([!filterArray[0], filterArray[1], filterArray[2]])} />}/>
-                    <FormControlLabel label='Problem' control={<Checkbox onClick={() => setFilterArray([filterArray[0], !filterArray[1], filterArray[2]])}/>}/>
-                    <FormControlLabel label='General' control={<Checkbox onClick={() => setFilterArray([filterArray[0], filterArray[1], !filterArray[2]])}/>}/>
-                </FormGroup>
-            </Menu>
-
+                    <FormGroup sx={{minWidth:320, padding:2, gap:2}}>
+                        <FormControlLabel label='Suggestion'control={<Checkbox onClick={() => setFilterArray([!filterArray[0], filterArray[1], filterArray[2]])} />}/>
+                        <FormControlLabel label='Problem' control={<Checkbox onClick={() => setFilterArray([filterArray[0], !filterArray[1], filterArray[2]])}/>}/>
+                        <FormControlLabel label='General' control={<Checkbox onClick={() => setFilterArray([filterArray[0], filterArray[1], !filterArray[2]])}/>}/>
+                    </FormGroup>
+                </Menu>
             }
+            {/* Opened Post Dialog */}
+            {
+                currPostIndex >= 0 &&
+                data.length != 0 &&
+                <Dialog open={popup == 'post'} maxWidth='lg' fullWidth>
+                    <Box sx={{ backgroundColor: postColours[currPostIndex] }} className='text-white'>
+                        <Box sx={{display: 'flex', justifyContent:'flex-end' }}>
+                            <Button onClick={() => { setPopup(''); setCurrPostIndex(0); setCommentText(''); setCommentError(false) ; setCommentData([]) }}
+                                sx={{justifySelf:'end'}}>
+                                <Close/>
+                            </Button>
+                        </Box>
+                        <Box className='p-2'>
+                            <Typography className="font-bold" variant="h3" sx={{justifySelf:'center'}}>{data[currPostIndex].title}</Typography>
+                            <Typography
+                                className="mb-5" variant="body1"
+                                sx={{justifySelf:'center'}}>by: {data[currPostIndex].username} on {new Date(data[currPostIndex].time).toLocaleString()}
+                            </Typography>
+                            <Stack direction='row' spacing={1}>
+                                <Chip color="info" className="font-bold" label={data[currPostIndex].category}></Chip>
+                                {
+                                    String(data[currPostIndex].keywords).split(",").map((y, id) => (
+                                        <Chip sx={{backgroundColor:'whitesmoke'}} className="font-bold" key={id} label={y}></Chip>
+                                    ))
+                                }
+                            </Stack>
+                        </Box>
+                    </Box>
+                    <Box sx={{padding:2}}>
+                        <Typography variant="body1">{data[currPostIndex].description}</Typography>
+                    </Box>
+                    <Box sx={{padding:1, backgroundColor:'whitesmoke'}}>
+                        <Typography variant="body2"></Typography>
+                    </Box>
+                    <Box sx={{padding:2}}>
+                        <Typography className="font-bold mt-1" variant="h6">Comments</Typography>
+                        {
+                            commentData.length == 0
+                            ? (
+                                <Typography variant="body2" className="italic">No one has posted a comment yet. Be the first!</Typography>
+                            )
+                            : (
+                                <Stack spacing={1}>
+                                    {
+                                        commentData.map((x, index) => (
+                                            <Box key={index} className='border-2 rounded-xl p-2'>
+                                                <Box sx={{display:'flex', flexDirection:'row', gap:1}}>
+                                                    <Avatar>{x.commenter.charAt(0)}</Avatar>
+                                                    <Box>
+                                                        <Typography className="font-bold mt-2">{x.commenter}</Typography>
+                                                        <Typography>{x.comment}</Typography>
+                                                        <Typography variant='body2' className="italic mt-2">{new Date(x.timing).toLocaleString()}</Typography>
+                                                    </Box>
+                                                </Box>
+                                            </Box>
+                                        ))
+                                    }
+                                </Stack>
+                            )
+                        }
+                        <TextField fullWidth variant="outlined" value={commentText} onChange={e => setCommentText(e.target.value)}
+                            error={commentError} helperText={commentError ? "Please enter a valid comment" : ""}
+                            placeholder="Type your comment here." size="small" multiline className="mt-3"
+                            slotProps={{
+                                input: {
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <AddComment/>
+                                        </InputAdornment>
+                                    ),
+                                    endAdornment: (
+                                        <InputAdornment position="end">
+                                            <Button color="inherit" size="large" onClick={() => handleNewComment(currPostIndex)}>
+                                                <Send/>
+                                            </Button>
+                                        </InputAdornment>
+                                    )
+                                }
+                            }}/>
+                    </Box>
+                </Dialog>
+            }
+            {/* Loading */}
+            <Backdrop open={loading} color='inherit'>
+                <CircularProgress color="primary"/>
+            </Backdrop>
         </Box>
     )
 }
