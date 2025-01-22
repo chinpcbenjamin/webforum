@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -35,6 +36,15 @@ func AddNewPost(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+type ForumPostReturn struct {
+	Title       string    `json:"title"`
+	Username    string    `json:"username"`
+	Category    string    `json:"category"`
+	Keywords    string    `json:"keywords"`
+	Description string    `json:"description"`
+	Timing      time.Time `json:"time"`
+}
+
 func GetAllForumData(db *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, http_request *http.Request) {
 		rows, err := db.Query("SELECT * FROM posts")
@@ -48,15 +58,6 @@ func GetAllForumData(db *sql.DB) http.HandlerFunc {
 		var keywords string
 		var description string
 		var timing time.Time
-
-		type ForumPostReturn struct {
-			Title       string    `json:"title"`
-			Username    string    `json:"username"`
-			Category    string    `json:"category"`
-			Keywords    string    `json:"keywords"`
-			Description string    `json:"description"`
-			Timing      time.Time `json:"time"`
-		}
 
 		var data []ForumPostReturn
 
@@ -79,6 +80,77 @@ func GetAllForumData(db *sql.DB) http.HandlerFunc {
 			})
 		}
 
+	}
+}
+
+func GetFilteredForumData(db *sql.DB) http.HandlerFunc {
+	return func(writer http.ResponseWriter, http_request *http.Request) {
+		var word string = http_request.URL.Query().Get("keywords")
+		var categories string = http_request.URL.Query().Get("category")
+
+		args := []interface{}{}
+		query := "SELECT * FROM posts"
+
+		if word != "" {
+			query += " WHERE (title LIKE ? OR keywords LIKE ?)"
+			args = append(args, "%"+word+"%", "%"+word+"%")
+		}
+
+		filters := []string{}
+		if string(categories[0]) == "1" {
+			filters = append(filters, "Suggestion")
+		}
+		if string(categories[2]) == "1" {
+			filters = append(filters, "Problem")
+		}
+		if string(categories[4]) == "1" {
+			filters = append(filters, "General")
+		}
+
+		if len(filters) > 0 {
+			if len(args) > 0 {
+				query += " AND"
+			} else {
+				query += " WHERE"
+			}
+			query += " category IN (" + strings.Repeat("?,", len(filters)-1) + "?)"
+			for _, f := range filters {
+				args = append(args, f)
+			}
+		}
+
+		var title string
+		var username string
+		var category string
+		var keywords string
+		var description string
+		var timing time.Time
+		var data []ForumPostReturn
+
+		rows, err := db.Query(query, args...)
+		if err == sql.ErrNoRows {
+			http.Error(writer, "No forum data available", http.StatusNoContent)
+			return
+		}
+
+		for rows.Next() && err == nil {
+			err = rows.Scan(&title, &username, &category, &keywords, &description, &timing)
+			if err != nil {
+				http.Error(writer, "Failed to scan", http.StatusInternalServerError)
+			}
+			var post ForumPostReturn = ForumPostReturn{title, username, category, keywords, description, timing}
+			data = append(data, post)
+		}
+
+		if len(data) == 0 {
+			http.Error(writer, "Failed to get posts", http.StatusNoContent)
+		} else {
+			writer.Header().Set("Content-Type", "application/json")
+			writer.WriteHeader(http.StatusOK)
+			json.NewEncoder(writer).Encode(map[string][]ForumPostReturn{
+				"data": data,
+			})
+		}
 	}
 }
 

@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Box, Typography, List, ListSubheader, ListItemButton, ListItemIcon, ListItemText } from "@mui/material"
 import { AccountCircle, WebStories, Logout } from "@mui/icons-material"
-import { comment } from "postcss"
 
 export default function ForumDataHook() {
     const router = useRouter()
@@ -117,6 +116,27 @@ export default function ForumDataHook() {
         }
     }
 
+    const filterPosts = async (keywords : string, filterArray : boolean[]) => {
+        console.log(keywords, filterArray)
+        const transformedArray = filterArray.map(x => x ? "1" : "0").join()
+        console.log(keywords, transformedArray)
+        try {
+            const response = await fetch(`http://localhost:3001/filtered-posts?keywords=${keywords}&category=${transformedArray}`, {
+                method: "GET"
+            })
+            if (response.status == 204) {
+                setData([])
+            } else if (response.ok) {
+                const a = await response.json()
+                setData(a.data)
+            } else {
+                console.error("error")
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
     const drawerList = (
         <Box sx={{width: 200}} className='flex flex-col'>
             <Box className='flex flex-row m-3'>
@@ -140,7 +160,7 @@ export default function ForumDataHook() {
                     </ListItemText>
                 </ListItemButton>
 
-                <ListItemButton className="m-2" onClick={() => router.push("/")}>
+                <ListItemButton className="m-2" onClick={() => {localStorage.removeItem('token')  ; router.push("/")}}>
                     <ListItemIcon>
                         <Logout sx={{width: 36, height: 36}}/>
                     </ListItemIcon>
@@ -154,6 +174,6 @@ export default function ForumDataHook() {
 
     return { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
         commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
-        getCurrPostComments
+        getCurrPostComments, filterPosts
      }
 }

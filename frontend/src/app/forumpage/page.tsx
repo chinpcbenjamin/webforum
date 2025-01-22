@@ -7,6 +7,10 @@ import { AddBox, AddComment, Close, Description, Forum, Search, Send, Settings, 
 import ForumDataHook from "./hooks/forumDataHook"
 
 export default function forum() {
+    const { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
+        commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
+        getCurrPostComments, filterPosts } = ForumDataHook()
+
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
 
     const [popup, setPopup] = useState<string>('')
@@ -21,9 +25,7 @@ export default function forum() {
     const [filterMenuAnchor, setFilterMenuAnchor] = useState<null|HTMLElement>(null)
     const [filterArray, setFilterArray] = useState<boolean[]>([false, false, false])
 
-    const { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
-        commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
-        getCurrPostComments } = ForumDataHook()
+    const [searchBar, setSearchBar] = useState<string>('')
 
     const handlePostClick = async (index : number) => {
         setCurrPostIndex(index);
@@ -79,6 +81,8 @@ export default function forum() {
             </Container>
             <Box className='flex flex-row'>
                 <TextField
+                    value={searchBar}
+                    onChange={e => setSearchBar(e.target.value)}
                     className="my-5 pl-10 pr-1"
                     fullWidth
                     variant="outlined"
@@ -94,7 +98,7 @@ export default function forum() {
                             ),
                             endAdornment: (
                                 <InputAdornment position="end">
-                                    <Button color='inherit'>
+                                    <Button color='inherit' onClick={() => filterPosts(searchBar, filterArray)}>
                                         <Search/>
                                     </Button>
                                 </InputAdornment>
@@ -110,7 +114,7 @@ export default function forum() {
             {/* List of Forum Content */}
             {
                 <Box className="flex flex-row justify-center" sx={{minWidth:"100%"}}>
-                    <List sx={{minWidth:"40%"}}>
+                    <List sx={{minWidth:"70%"}}>
                         {
                             data.length != 0 &&
                             data.map((x, index) => 
@@ -131,6 +135,11 @@ export default function forum() {
                                     </Paper>
                                 </ListItem>
                             )
+                        }
+                        {
+                            data.length == 0
+                            &&
+                            <Typography className="italic">Looks like there are no search results! Search for something else instead!</Typography>
                         }
                     </List>
                 </Box>
@@ -255,9 +264,9 @@ export default function forum() {
                 <Menu open={popup == 'filter'} anchorEl={filterMenuAnchor}
                     onClose={() => {setFilterMenuAnchor(null); setPopup('')}} disableScrollLock>
                     <FormGroup sx={{minWidth:320, padding:2, gap:2}}>
-                        <FormControlLabel label='Suggestion'control={<Checkbox onClick={() => setFilterArray([!filterArray[0], filterArray[1], filterArray[2]])} />}/>
-                        <FormControlLabel label='Problem' control={<Checkbox onClick={() => setFilterArray([filterArray[0], !filterArray[1], filterArray[2]])}/>}/>
-                        <FormControlLabel label='General' control={<Checkbox onClick={() => setFilterArray([filterArray[0], filterArray[1], !filterArray[2]])}/>}/>
+                        <FormControlLabel label='Suggestion'control={<Checkbox checked={filterArray[0]} onClick={() => setFilterArray([!filterArray[0], filterArray[1], filterArray[2]])} />}/>
+                        <FormControlLabel label='Problem' control={<Checkbox checked={filterArray[1]} onClick={() => setFilterArray([filterArray[0], !filterArray[1], filterArray[2]])}/>}/>
+                        <FormControlLabel label='General' control={<Checkbox checked={filterArray[2]} onClick={() => setFilterArray([filterArray[0], filterArray[1], !filterArray[2]])}/>}/>
                     </FormGroup>
                 </Menu>
             }

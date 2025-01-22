@@ -43,6 +43,7 @@ func main() {
 	r.Post("/new-comment", handlers.AddNewComment(db.Get_Database()))
 
 	r.Get("/get-forum-data", handlers.GetAllForumData(db.Get_Database()))
+	r.Get("/filtered-posts", handlers.GetFilteredForumData(db.Get_Database()))
 	r.Get("/get-comments", handlers.GetCommentsForPost(db.Get_Database()))
 
 	http.ListenAndServe(":3001", r)
