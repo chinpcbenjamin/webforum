@@ -131,7 +131,7 @@ func GetFilteredForumData(db *sql.DB) http.HandlerFunc {
 
 		rows, err := db.Query(query, args...)
 		if err == sql.ErrNoRows {
-			http.Error(writer, "No forum data available", http.StatusNoContent)
+			http.Error(writer, "No forum data available", http.StatusNotFound)
 			return
 		}
 
@@ -160,7 +160,7 @@ func GetUserForumPosts(db *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, http_request *http.Request) {
 		rows, err := db.Query("SELECT * FROM posts WHERE username=? ORDER BY timing DESC", http_request.URL.Query().Get("user"))
 		if err == sql.ErrNoRows {
-			http.Error(writer, "No forum data available", http.StatusNoContent)
+			http.Error(writer, "No forum data available", http.StatusNotFound)
 			return
 		}
 
@@ -190,6 +190,20 @@ func GetUserForumPosts(db *sql.DB) http.HandlerFunc {
 			json.NewEncoder(writer).Encode(map[string][]ForumPostReturn{
 				"data": data,
 			})
+		}
+	}
+}
+
+func DeleteForumPost(db *sql.DB) http.HandlerFunc {
+	return func(writer http.ResponseWriter, http_request *http.Request) {
+		title := http_request.URL.Query().Get("title")
+		username := http_request.URL.Query().Get("username")
+
+		_, err := db.Exec("DELETE FROM posts WHERE title=? AND username=?", title, username)
+		if err != nil {
+			http.Error(writer, "Failed to delete post", http.StatusNotFound)
+		} else {
+			writer.WriteHeader(http.StatusNoContent)
 		}
 	}
 }
@@ -229,7 +243,8 @@ func GetCommentsForPost(db *sql.DB) http.HandlerFunc {
 
 		rows, err := db.Query("SELECT commenter, comment, timing FROM comments WHERE title = ? AND username = ? ORDER BY timing DESC", title, username)
 		if err == sql.ErrNoRows {
-			http.Error(writer, "No forum data available", http.StatusNoContent)
+			http.Error(writer, "No forum data available", http.StatusNotFound)
+			return
 		}
 
 		var commenter string

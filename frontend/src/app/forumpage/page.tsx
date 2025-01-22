@@ -3,13 +3,13 @@
 import React, { useState } from "react"
 import { Typography, Container, Button, TextField, InputAdornment, Drawer, Box, List, Dialog, DialogTitle, FormControl, RadioGroup, Radio, FormControlLabel,
     Stack, Chip, DialogActions, Alert, AlertTitle, ListItem, Paper, Menu, Checkbox, FormGroup, Avatar } from "@mui/material"
-import { AddBox, AddComment, Close, Description, Forum, Search, Send, Settings, Title, Tune } from "@mui/icons-material"
+import { AddBox, AddComment, Close, DeleteOutline, Description, Forum, Search, Send, Settings, Title, Tune } from "@mui/icons-material"
 import ForumDataHook from "./hooks/forumDataHook"
 
 export default function forum() {
     const { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
         commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
-        getCurrPostComments, filterPosts, userView } = ForumDataHook()
+        getCurrPostComments, filterPosts, userView, deletePost } = ForumDataHook()
 
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
 
@@ -26,6 +26,8 @@ export default function forum() {
     const [filterArray, setFilterArray] = useState<boolean[]>([false, false, false])
 
     const [searchBar, setSearchBar] = useState<string>('')
+
+    const [deleteAlert, setDeleteAlert] = useState<boolean>(false)
 
     const handlePostClick = async (index : number) => {
         setCurrPostIndex(index);
@@ -68,6 +70,11 @@ export default function forum() {
                 console.error(error)
             }
         }
+    }
+
+    const handleConfirmDelete = async (index : number) => {
+        await deletePost(index)
+        setPopup('')
     }
 
     return (
@@ -284,8 +291,32 @@ export default function forum() {
                 currPostIndex >= 0 &&
                 data.length != 0 &&
                 <Dialog open={popup == 'post'} maxWidth='lg' fullWidth>
+                    {
+                        deleteAlert &&
+                        <Alert variant="filled" severity="error">
+                            <Box sx={{display:'flex', flexDirection:'row'}}>
+                                <Typography sx={{width:'80%'}}>
+                                    Confirm deletion? Once done, data cannot be recovered.
+                                </Typography>
+                                <Box sx={{display:'flex', flexDirection:'row', gap:1}}>
+                                    <Button className="p-0" onClick={() => handleConfirmDelete(currPostIndex)}>
+                                        Accept
+                                    </Button>
+                                    <Button className="p-0" onClick={() => setDeleteAlert(false)}>
+                                        Cancel
+                                    </Button>
+                                </Box>
+                            </Box>
+                        </Alert>
+                    }
                     <Box sx={{ backgroundColor: postColours[currPostIndex] }} className='text-white'>
                         <Box sx={{display: 'flex', justifyContent:'flex-end' }}>
+                            {
+                                data[currPostIndex].username == user &&
+                                <Button onClick={() => setDeleteAlert(true)}>
+                                    <DeleteOutline/>
+                                </Button>
+                            }
                             <Button onClick={() => { setPopup(''); setCurrPostIndex(0); setCommentText(''); setCommentError(false) ; setCommentData([]) }}
                                 sx={{justifySelf:'end'}}>
                                 <Close/>

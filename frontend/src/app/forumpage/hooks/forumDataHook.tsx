@@ -118,6 +118,23 @@ export default function ForumDataHook() {
         }
     }
 
+    const deletePost = async (index : number) => {
+        if (!data[currPostIndex]) {
+            return
+        }
+        try {
+            const response = await fetch(`http://localhost:3001/delete-post?title=${data[index].title}&username=${data[index].username}`, {
+                method: "DELETE"
+            })
+            if (response.ok) {
+                retrieveForumData()
+                setUserView(false)
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
     const filterPosts = async (keywords : string, filterArray : boolean[]) => {
         console.log(keywords, filterArray)
         const transformedArray = filterArray.map(x => x ? "1" : "0").join()
@@ -126,7 +143,7 @@ export default function ForumDataHook() {
             const response = await fetch(`http://localhost:3001/filtered-posts?keywords=${keywords}&category=${transformedArray}`, {
                 method: "GET"
             })
-            if (response.status == 204) {
+            if (response.status == 404) {
                 setData([])
             } else if (response.ok) {
                 const a = await response.json()
@@ -145,7 +162,7 @@ export default function ForumDataHook() {
             const response = await fetch(`http://localhost:3001/user-posts?user=${user}`, {
                 method: "GET",
             })
-            if (response.status == 204) {
+            if (response.status == 404) {
                 setData([])
             } else if (response.ok) {
                 const a = await response.json()
@@ -202,6 +219,6 @@ export default function ForumDataHook() {
 
     return { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
         commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
-        getCurrPostComments, filterPosts, userView
+        getCurrPostComments, filterPosts, userView, deletePost
      }
 }
