@@ -47,7 +47,7 @@ type ForumPostReturn struct {
 
 func GetAllForumData(db *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, http_request *http.Request) {
-		rows, err := db.Query("SELECT * FROM posts")
+		rows, err := db.Query("SELECT * FROM posts ORDER BY timing DESC")
 		if err == sql.ErrNoRows {
 			http.Error(writer, "No forum data available", http.StatusNoContent)
 		}
@@ -119,6 +119,8 @@ func GetFilteredForumData(db *sql.DB) http.HandlerFunc {
 			}
 		}
 
+		query += " ORDER BY timing DESC"
+
 		var title string
 		var username string
 		var category string
@@ -144,6 +146,44 @@ func GetFilteredForumData(db *sql.DB) http.HandlerFunc {
 
 		if len(data) == 0 {
 			http.Error(writer, "Failed to get posts", http.StatusNoContent)
+		} else {
+			writer.Header().Set("Content-Type", "application/json")
+			writer.WriteHeader(http.StatusOK)
+			json.NewEncoder(writer).Encode(map[string][]ForumPostReturn{
+				"data": data,
+			})
+		}
+	}
+}
+
+func GetUserForumPosts(db *sql.DB) http.HandlerFunc {
+	return func(writer http.ResponseWriter, http_request *http.Request) {
+		rows, err := db.Query("SELECT * FROM posts WHERE username=? ORDER BY timing DESC", http_request.URL.Query().Get("user"))
+		if err == sql.ErrNoRows {
+			http.Error(writer, "No forum data available", http.StatusNoContent)
+			return
+		}
+
+		var title string
+		var username string
+		var category string
+		var keywords string
+		var description string
+		var timing time.Time
+
+		var data []ForumPostReturn
+
+		for rows.Next() {
+			err = rows.Scan(&title, &username, &category, &keywords, &description, &timing)
+			if err != nil {
+				http.Error(writer, "Failed to scan", http.StatusInternalServerError)
+			}
+			var post ForumPostReturn = ForumPostReturn{title, username, category, keywords, description, timing}
+			data = append(data, post)
+		}
+
+		if len(data) == 0 {
+			http.Error(writer, "Failed to get posts", http.StatusInternalServerError)
 		} else {
 			writer.Header().Set("Content-Type", "application/json")
 			writer.WriteHeader(http.StatusOK)
@@ -187,7 +227,7 @@ func GetCommentsForPost(db *sql.DB) http.HandlerFunc {
 		title := http_request.URL.Query().Get("title")
 		username := http_request.URL.Query().Get("username")
 
-		rows, err := db.Query("SELECT commenter, comment, timing FROM comments WHERE title = ? AND username = ?", title, username)
+		rows, err := db.Query("SELECT commenter, comment, timing FROM comments WHERE title = ? AND username = ? ORDER BY timing DESC", title, username)
 		if err == sql.ErrNoRows {
 			http.Error(writer, "No forum data available", http.StatusNoContent)
 		}

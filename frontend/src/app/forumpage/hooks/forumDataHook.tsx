@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Box, Typography, List, ListSubheader, ListItemButton, ListItemIcon, ListItemText } from "@mui/material"
-import { AccountCircle, WebStories, Logout } from "@mui/icons-material"
+import { Box, Typography, List, ListSubheader, ListItemButton, ListItemIcon, ListItemText, Divider } from "@mui/material"
+import { AccountCircle, WebStories, Logout, RestartAlt } from "@mui/icons-material"
 
 export default function ForumDataHook() {
     const router = useRouter()
@@ -16,6 +16,8 @@ export default function ForumDataHook() {
     const [commentText, setCommentText] = useState<string>('')
     const [commentData, setCommentData] = useState<any[]>([])
     const [commentError, setCommentError] = useState<boolean>(false)
+
+    const [userView, setUserView] = useState<boolean>(false)
 
     useEffect(() => {
         const verify_user : () => void = async () => {
@@ -129,8 +131,26 @@ export default function ForumDataHook() {
             } else if (response.ok) {
                 const a = await response.json()
                 setData(a.data)
+                a.data.forEach((x : any) => postColours.push(bgColors[Math.floor(Math.random() * 10)]))
             } else {
                 console.error("error")
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const userPosts = async () => {
+        try {
+            const response = await fetch(`http://localhost:3001/user-posts?user=${user}`, {
+                method: "GET",
+            })
+            if (response.status == 204) {
+                setData([])
+            } else if (response.ok) {
+                const a = await response.json()
+                setData(a.data)
+                a.data.forEach((x : any) => postColours.push(bgColors[Math.floor(Math.random() * 10)]))
             }
         } catch (error) {
             console.error(error)
@@ -143,15 +163,23 @@ export default function ForumDataHook() {
                 <AccountCircle sx={{width: 36, height: 36}}/>
                 <Typography sx={{paddingLeft:2, paddingTop: 1}}>{user}</Typography>
             </Box>
+            <Divider/>
             <List
                 subheader={
                     <ListSubheader>
                         Settings
                     </ListSubheader>
-                }
-                sx={{marginTop:4}}>
+                }>
+                <ListItemButton className="mx-2 mb-2" onClick={() => { retrieveForumData(); setUserView(false) }}>
+                    <ListItemIcon>
+                        <RestartAlt sx={{width: 36, height: 36}}/>
+                    </ListItemIcon>
+                    <ListItemText>
+                        Reset Search
+                    </ListItemText>
+                </ListItemButton>
 
-                <ListItemButton className="mx-2 mb-2">
+                <ListItemButton className="mx-2 mb-2" onClick={() => { userPosts(); setUserView(true) }}>
                     <ListItemIcon>
                         <WebStories sx={{width: 36, height: 36}}/>
                     </ListItemIcon>
@@ -174,6 +202,6 @@ export default function ForumDataHook() {
 
     return { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
         commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
-        getCurrPostComments, filterPosts
+        getCurrPostComments, filterPosts, userView
      }
 }

@@ -9,7 +9,7 @@ import ForumDataHook from "./hooks/forumDataHook"
 export default function forum() {
     const { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
         commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
-        getCurrPostComments, filterPosts } = ForumDataHook()
+        getCurrPostComments, filterPosts, userView } = ForumDataHook()
 
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
 
@@ -79,33 +79,41 @@ export default function forum() {
                     <Settings sx={{width: 36, height: 36, color:"white"}}/>
                 </Button>
             </Container>
+            {/* <Box className={!userView ? 'flex flex-row' : "flex flex-row justify-end"}> */}
             <Box className='flex flex-row'>
-                <TextField
-                    value={searchBar}
-                    onChange={e => setSearchBar(e.target.value)}
-                    className="my-5 pl-10 pr-1"
-                    fullWidth
-                    variant="outlined"
-                    placeholder="Search for a topic by its title, or by its keywords"
-                    slotProps={{
-                        input: {
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <Button color="inherit" size="large" onClick={e => {setFilterMenuAnchor(e.currentTarget) ; setPopup('filter')}}>
-                                        <Tune/>
-                                    </Button>
-                                </InputAdornment>
-                            ),
-                            endAdornment: (
-                                <InputAdornment position="end">
-                                    <Button color='inherit' onClick={() => filterPosts(searchBar, filterArray)}>
-                                        <Search/>
-                                    </Button>
-                                </InputAdornment>
-                            )
-                        }
-                    }}>
-                </TextField>
+                {
+                    userView &&
+                    <Typography variant="h6" className="font-bold my-5 mx-2 text-center" sx={{minWidth:"96%"}}>Your Posts</Typography>
+                }
+                {
+                    !userView &&
+                    <TextField
+                        value={searchBar}
+                        onChange={e => setSearchBar(e.target.value)}
+                        className="my-5 pl-10 pr-1"
+                        fullWidth
+                        variant="outlined"
+                        placeholder="Search for a topic by its title, or by its keywords"
+                        slotProps={{
+                            input: {
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <Button color="inherit" size="large" onClick={e => {setFilterMenuAnchor(e.currentTarget) ; setPopup('filter')}}>
+                                            <Tune/>
+                                        </Button>
+                                    </InputAdornment>
+                                ),
+                                endAdornment: (
+                                    <InputAdornment position="end">
+                                        <Button color='inherit' onClick={() => filterPosts(searchBar, filterArray)}>
+                                            <Search/>
+                                        </Button>
+                                    </InputAdornment>
+                                )
+                            }
+                        }}>
+                    </TextField>
+                }
                 <Button onClick={() => setPopup('newPost')}>
                     <AddBox sx={{width: 36, height: 36, color:'#93c5fd'}}/>
                 </Button>
@@ -132,6 +140,7 @@ export default function forum() {
                                             ))
                                         }
                                         </Stack>
+                                        <Typography className="mt-2 italic" variant="body2">{new Date(x.time).toLocaleString()}</Typography>
                                     </Paper>
                                 </ListItem>
                             )
