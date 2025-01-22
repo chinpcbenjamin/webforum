@@ -1,18 +1,13 @@
 'use client'
 
-import React, { useEffect, useState } from "react"
-import { Typography, Container, Button, TextField, InputAdornment, Drawer, Box, List, ListItemButton, ListItemIcon,
-    ListItemText, ListSubheader, Dialog, DialogTitle, FormControl, RadioGroup, Radio, FormControlLabel,
-    Stack, Chip, DialogActions, Alert, AlertTitle, ListItem, Paper, Menu, Checkbox, FormGroup, Avatar,
-    Backdrop,
-    CircularProgress} from "@mui/material"
-import { AccountCircle, AddBox, AddComment, Close, Description, Forum, Logout, Search, Send, Settings, Title, Tune, WebStories } from "@mui/icons-material"
-import { useRouter } from "next/navigation"
+import React, { useState } from "react"
+import { Typography, Container, Button, TextField, InputAdornment, Drawer, Box, List, Dialog, DialogTitle, FormControl, RadioGroup, Radio, FormControlLabel,
+    Stack, Chip, DialogActions, Alert, AlertTitle, ListItem, Paper, Menu, Checkbox, FormGroup, Avatar } from "@mui/material"
+import { AddBox, AddComment, Close, Description, Forum, Search, Send, Settings, Title, Tune } from "@mui/icons-material"
+import ForumDataHook from "./hooks/forumDataHook"
 
 export default function forum() {
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
-    const router = useRouter()
-    const [user, setUser] = useState<string>('')
 
     const [popup, setPopup] = useState<string>('')
 
@@ -23,72 +18,18 @@ export default function forum() {
     const [keywordsText, setKeywordsText] = useState<string>('')
     const [newPostError, setNewPostError] = useState<boolean>(false)
 
-    const [data, setData] = useState<any[]>([])
-    const [postColours, setPostColours] = useState<string[]>([])
-    const bgColors : string[] = ['yellowgreen', 'wheat', 'turquoise', 'thistle', 'tan', 'skyblue', 'powderblue', 'plum', 'palevioletred', 'olive']
-
     const [filterMenuAnchor, setFilterMenuAnchor] = useState<null|HTMLElement>(null)
     const [filterArray, setFilterArray] = useState<boolean[]>([false, false, false])
 
-    const [currPostIndex, setCurrPostIndex] = useState<number>(-1)
-    const [commentText, setCommentText] = useState<string>('')
-    const [commentData, setCommentData] = useState<any[]>([])
-    const [commentError, setCommentError] = useState<boolean>(false)
-
-    const [loading, setLoading] = useState<boolean>(false)
-
-    useEffect(() => {
-        const verify_user : () => void = async () => {
-            try {
-                const response = await fetch("http://localhost:3001/verify", {
-                    method: "POST",
-                    headers: {
-                        'Content-Type' : 'application/json'
-                    },
-                    body: JSON.stringify({
-                        "token": localStorage.getItem("token")
-                    })
-                })
-    
-                if (!response.ok) {
-                    alert("Error. Invalid sign in credentials. Please sign in again.")
-                    router.push("../")
-                } else {
-                    const a = await response.json()
-                    setUser(a.username)
-                }
-    
-            } catch (error) {
-                console.error(error)
-            }
-        }
-        verify_user()
-    }, [])
+    const { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
+        commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
+        getCurrPostComments } = ForumDataHook()
 
     const handlePostClick = async (index : number) => {
         setCurrPostIndex(index);
         await getCurrPostComments(index);
         setPopup("post");
     }
-
-    const retrieveForumData : () => void = async () => {
-        try {
-            const response = await fetch("http://localhost:3001/get-forum-data", {
-                method: "GET",
-            })
-            if (response.ok) {
-                const a = await response.json()
-                setData(a.data)
-                a.data.forEach((x : any) => postColours.push(bgColors[Math.floor(Math.random() * 10)]))
-            }
-        } catch (error) {
-            console.error(error)
-        }
-    }
-
-    useEffect(() => {
-        retrieveForumData()
-    }, [])
 
     const handleNewPost : () => void = async () => {
         if (title.trim() == '' || description.trim() == '' || keywords.length == 0) {
@@ -126,96 +67,6 @@ export default function forum() {
             }
         }
     }
-
-    const handleNewComment = async (index : number) => {
-        if (commentText.trim() == "") {
-            setCommentError(true)
-        } else {
-            try {
-                const response = await fetch("http://localhost:3001/new-comment", {
-                    method: "POST",
-                    headers: {
-                        'Content-Type' : 'application/json'
-                    },
-                    body: JSON.stringify({
-                        "commenter" : user,
-                        "comment" : commentText.trim(),
-                        "title" : data[currPostIndex].title,
-                        "username" : data[currPostIndex].username
-                    })
-                })
-
-                if (response.ok) {
-                    setCommentText('')
-                    getCurrPostComments(index)
-                    setCommentError(false)
-                } else {
-                    setCommentError(true)
-                }
-            } catch (error) {
-                console.error(error)
-            }
-        }
-    }
-
-    const getCurrPostComments = async (index : number) => {
-        if (!data[currPostIndex]) {
-            return
-        }
-        try {
-            setLoading(true)
-            const response = await fetch(`http://localhost:3001/get-comments?title=${data[index].title}&username=${data[index].username}`, {
-                method: "GET"
-            })
-            if (response.ok) {
-                const a = await response.json()
-                setCommentData(a.data)
-                setLoading(false)
-                return true
-            } else {
-                setCommentData([])
-                setLoading(false)
-                return false
-            }
-        } catch (error) {
-            console.error(error)
-        }
-    }
-
-    const drawerList = (
-        <Box sx={{width: 200}} className='flex flex-col'>
-            <Box className='flex flex-row m-3'>
-                <AccountCircle sx={{width: 36, height: 36}}/>
-                <Typography sx={{paddingLeft:2, paddingTop: 1}}>{user}</Typography>
-            </Box>
-            <List
-                subheader={
-                    <ListSubheader>
-                        Settings
-                    </ListSubheader>
-                }
-                sx={{marginTop:4}}>
-
-                <ListItemButton className="mx-2 mb-2">
-                    <ListItemIcon>
-                        <WebStories sx={{width: 36, height: 36}}/>
-                    </ListItemIcon>
-                    <ListItemText>
-                        View Your Posts
-                    </ListItemText>
-                </ListItemButton>
-
-                <ListItemButton className="m-2" onClick={() => router.push("/")}>
-                    <ListItemIcon>
-                        <Logout sx={{width: 36, height: 36}}/>
-                    </ListItemIcon>
-                    <ListItemText>
-                        Sign Out
-                    </ListItemText>
-                </ListItemButton>
-            </List>
-        </Box>
-    )
 
     return (
         <Box sx={{minWidth:'100%', padding: 0, margin: 0}}>
@@ -492,10 +343,6 @@ export default function forum() {
                     </Box>
                 </Dialog>
             }
-            {/* Loading */}
-            <Backdrop open={loading} color='inherit'>
-                <CircularProgress color="primary"/>
-            </Backdrop>
         </Box>
     )
 }
