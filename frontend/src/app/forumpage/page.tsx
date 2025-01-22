@@ -2,14 +2,16 @@
 
 import React, { useState } from "react"
 import { Typography, Container, Button, TextField, InputAdornment, Drawer, Box, List, Dialog, DialogTitle, FormControl, RadioGroup, Radio, FormControlLabel,
-    Stack, Chip, DialogActions, Alert, AlertTitle, ListItem, Paper, Menu, Checkbox, FormGroup, Avatar } from "@mui/material"
-import { AddBox, AddComment, Close, DeleteOutline, Description, Forum, Search, Send, Settings, Title, Tune } from "@mui/icons-material"
+    Stack, Chip, DialogActions, Alert, AlertTitle, ListItem, Paper, Menu, Checkbox, FormGroup, Avatar, 
+    Backdrop,
+    CircularProgress} from "@mui/material"
+import { AddBox, AddComment, Close, DeleteOutline, Description, EditNote, Forum, Search, Send, Settings, Title, Tune } from "@mui/icons-material"
 import ForumDataHook from "./hooks/forumDataHook"
 
 export default function forum() {
     const { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
         commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
-        getCurrPostComments, filterPosts, userView, deletePost } = ForumDataHook()
+        getCurrPostComments, filterPosts, userView, deletePost, loading, setLoading } = ForumDataHook()
 
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
 
@@ -29,6 +31,8 @@ export default function forum() {
 
     const [deleteAlert, setDeleteAlert] = useState<boolean>(false)
 
+    const [updateMode, setUpdateMode] = useState<boolean>(false)
+
     const handlePostClick = async (index : number) => {
         setCurrPostIndex(index);
         await getCurrPostComments(index);
@@ -41,6 +45,7 @@ export default function forum() {
             return
         } else {
             try {
+                setLoading(true)
                 const response = await fetch("http://localhost:3001/new-post", {
                     method : "POST",
                     headers: {
@@ -68,6 +73,52 @@ export default function forum() {
                 }
             } catch (error) {
                 console.error(error)
+            } finally {
+                setTimeout(() => {
+                    setLoading(false);
+                }, 2000);
+            }
+        }
+    }
+
+    const updatePost = async () => {
+        if (title.trim() == '' || description.trim() == '' || keywords.length == 0) {
+            setNewPostError(true)
+            return
+        } else {
+            try {
+                setLoading(true)
+                const response = await fetch("http://localhost:3001/update-post", {
+                    method : "PATCH",
+                    headers: {
+                        'Content-Type' : 'application/json'
+                    },
+                    body: JSON.stringify({
+                        'title': title.trim(),
+                        'username' : user,
+                        'category' : category,
+                        'keywords' : keywords.reduce((a, b) => a.concat(',').concat(b)),
+                        'description' : description.trim()
+                    })
+                })
+
+                if (response.ok) {
+                    setPopup('')
+                    setTitle('')
+                    setCategory('Suggestion')
+                    setDescription('')
+                    setKeywords([])
+                    setKeywordsText('')
+                    retrieveForumData()
+                } else {
+                    setNewPostError(true)
+                }
+            } catch (error) {
+                console.error(error)
+            } finally {
+                setTimeout(() => {
+                    setLoading(false);
+                }, 2000);
             }
         }
     }
@@ -75,6 +126,24 @@ export default function forum() {
     const handleConfirmDelete = async (index : number) => {
         await deletePost(index)
         setPopup('')
+    }
+
+    const handleUpdatePress = () => {
+        setUpdateMode(true)
+        setTitle(data[currPostIndex].title)
+        setCategory(data[currPostIndex].category)
+        setKeywords(data[currPostIndex].keywords.split(","))
+        setDescription(data[currPostIndex].description)
+        setPopup("newPost")
+    }
+
+    const cancelUpdatePress = () => {
+        setUpdateMode(false)
+        setTitle('')
+        setCategory('Suggestion')
+        setKeywords([])
+        setDescription('')
+        setPopup('post')
     }
 
     return (
@@ -169,17 +238,20 @@ export default function forum() {
                     {drawerList}    
             </Drawer>
 
-            {/* Add a new post to the forum popup */}
+            {/* Add a new post to the forum popup or update an existing post*/}
             {
                 <Dialog open={popup == 'newPost'} maxWidth='lg' fullWidth>
                     <Box sx={{display: 'flex', justifyContent:'flex-end'}}>
-                        <Button color='inherit' onClick={() => setPopup('')} sx={{justifySelf:'end'}}>
-                            <Close/>
-                        </Button>
+                        {
+                            !updateMode &&
+                            <Button color='inherit' onClick={() => setPopup('')} sx={{justifySelf:'end'}}>
+                                <Close/>
+                            </Button>
+                        }
                     </Box>
                     <Box className='p-5'>
                         <Box sx={{display: 'flex', justifyContent:'center'}}>
-                            <DialogTitle className="font-bold">New Discussion</DialogTitle>
+                            <DialogTitle className="font-bold">{ updateMode ? "Update Post" : "New Discussion" }</DialogTitle>
                         </Box>
                         <Box className='my-2'>
                             <Typography variant="body1" className="font-bold">Title</Typography>
@@ -268,7 +340,11 @@ export default function forum() {
                         }
                         <Box>
                             <DialogActions>
-                                <Button onClick={handleNewPost}>Post</Button>
+                                {
+                                    updateMode &&
+                                    <Button onClick={cancelUpdatePress}>Cancel</Button>
+                                }
+                                <Button onClick={ updateMode ? updatePost : handleNewPost}>{updateMode ? "Update" : "Post" }</Button>
                             </DialogActions>
                         </Box>
                     </Box>
@@ -311,6 +387,12 @@ export default function forum() {
                     }
                     <Box sx={{ backgroundColor: postColours[currPostIndex] }} className='text-white'>
                         <Box sx={{display: 'flex', justifyContent:'flex-end' }}>
+                            {
+                                data[currPostIndex].username == user &&
+                                <Button onClick={() => handleUpdatePress()}>
+                                    <EditNote/>
+                                </Button>
+                            }
                             {
                                 data[currPostIndex].username == user &&
                                 <Button onClick={() => setDeleteAlert(true)}>
@@ -391,6 +473,12 @@ export default function forum() {
                             }}/>
                     </Box>
                 </Dialog>
+            }
+            {/* Loading */}
+            {
+                <Backdrop open={loading}>
+                    <CircularProgress/>
+                </Backdrop>
             }
         </Box>
     )

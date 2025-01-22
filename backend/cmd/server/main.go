@@ -26,7 +26,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"}, //allows requests from my frontend. may need to change
-		AllowedMethods:   []string{"POST", "GET", "DELETE"},
+		AllowedMethods:   []string{"POST", "GET", "DELETE", "PATCH"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}))
@@ -48,6 +48,8 @@ func main() {
 	r.Get("/user-posts", handlers.GetUserForumPosts(db.Get_Database()))
 
 	r.Delete("/delete-post", handlers.DeleteForumPost(db.Get_Database()))
+
+	r.Patch("/update-post", handlers.UpdatePost(db.Get_Database()))
 
 	http.ListenAndServe(":3001", r)
 }

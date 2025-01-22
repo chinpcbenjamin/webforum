@@ -36,6 +36,25 @@ func AddNewPost(db *sql.DB) http.HandlerFunc {
 	}
 }
 
+func UpdatePost(db *sql.DB) http.HandlerFunc {
+	return func(writer http.ResponseWriter, http_request *http.Request) {
+		var request ForumPost
+		if err := json.NewDecoder(http_request.Body).Decode(&request); err != nil {
+			http.Error(writer, "Invalid Request Body", http.StatusBadRequest)
+		}
+
+		update := "UPDATE posts SET title = ?, category = ?, keywords = ?, description = ? WHERE title = ? AND username = ?"
+		_, err := db.Exec(update, request.Title, request.Category, request.Keywords, request.Description, request.Title, request.Username)
+
+		if err != nil {
+			http.Error(writer, "Failed to add new user", http.StatusInternalServerError)
+			return
+		}
+
+		writer.WriteHeader(http.StatusNoContent)
+	}
+}
+
 type ForumPostReturn struct {
 	Title       string    `json:"title"`
 	Username    string    `json:"username"`
@@ -145,7 +164,7 @@ func GetFilteredForumData(db *sql.DB) http.HandlerFunc {
 		}
 
 		if len(data) == 0 {
-			http.Error(writer, "Failed to get posts", http.StatusNoContent)
+			http.Error(writer, "Failed to get posts", http.StatusNotFound)
 		} else {
 			writer.Header().Set("Content-Type", "application/json")
 			writer.WriteHeader(http.StatusOK)
@@ -241,7 +260,7 @@ func GetCommentsForPost(db *sql.DB) http.HandlerFunc {
 		title := http_request.URL.Query().Get("title")
 		username := http_request.URL.Query().Get("username")
 
-		rows, err := db.Query("SELECT commenter, comment, timing FROM comments WHERE title = ? AND username = ? ORDER BY timing DESC", title, username)
+		rows, err := db.Query("SELECT commenter, comment, timing FROM comments WHERE title = ? AND username = ?", title, username)
 		if err == sql.ErrNoRows {
 			http.Error(writer, "No forum data available", http.StatusNotFound)
 			return

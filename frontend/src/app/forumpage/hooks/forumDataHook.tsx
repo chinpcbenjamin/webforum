@@ -19,6 +19,8 @@ export default function ForumDataHook() {
 
     const [userView, setUserView] = useState<boolean>(false)
 
+    const [loading, setLoading] = useState<boolean>(false)
+
     useEffect(() => {
         const verify_user : () => void = async () => {
             try {
@@ -49,6 +51,7 @@ export default function ForumDataHook() {
 
     const retrieveForumData : () => void = async () => {
         try {
+            setLoading(true)
             const response = await fetch("http://localhost:3001/get-forum-data", {
                 method: "GET",
             })
@@ -59,6 +62,10 @@ export default function ForumDataHook() {
             }
         } catch (error) {
             console.error(error)
+        } finally {
+            setTimeout(() => {
+                setLoading(false);
+            }, 2000);
         }
     }
 
@@ -71,6 +78,7 @@ export default function ForumDataHook() {
             setCommentError(true)
         } else {
             try {
+                setLoading(true)
                 const response = await fetch("http://localhost:3001/new-comment", {
                     method: "POST",
                     headers: {
@@ -93,6 +101,10 @@ export default function ForumDataHook() {
                 }
             } catch (error) {
                 console.error(error)
+            } finally {
+                setTimeout(() => {
+                    setLoading(false);
+                }, 2000);
             }
         }
     }
@@ -102,6 +114,7 @@ export default function ForumDataHook() {
             return
         }
         try {
+            setLoading(true)
             const response = await fetch(`http://localhost:3001/get-comments?title=${data[index].title}&username=${data[index].username}`, {
                 method: "GET"
             })
@@ -115,6 +128,10 @@ export default function ForumDataHook() {
             }
         } catch (error) {
             console.error(error)
+        } finally {
+            setTimeout(() => {
+                setLoading(false);
+            }, 2000);
         }
     }
 
@@ -123,6 +140,7 @@ export default function ForumDataHook() {
             return
         }
         try {
+            setLoading(true)
             const response = await fetch(`http://localhost:3001/delete-post?title=${data[index].title}&username=${data[index].username}`, {
                 method: "DELETE"
             })
@@ -132,14 +150,17 @@ export default function ForumDataHook() {
             }
         } catch (error) {
             console.error(error)
+        } finally {
+            setTimeout(() => {
+                setLoading(false);
+            }, 2000);
         }
     }
 
     const filterPosts = async (keywords : string, filterArray : boolean[]) => {
-        console.log(keywords, filterArray)
         const transformedArray = filterArray.map(x => x ? "1" : "0").join()
-        console.log(keywords, transformedArray)
         try {
+            setLoading(true)
             const response = await fetch(`http://localhost:3001/filtered-posts?keywords=${keywords}&category=${transformedArray}`, {
                 method: "GET"
             })
@@ -154,11 +175,16 @@ export default function ForumDataHook() {
             }
         } catch (error) {
             console.error(error)
+        } finally {
+            setTimeout(() => {
+                setLoading(false);
+            }, 2000);
         }
     }
 
     const userPosts = async () => {
         try {
+            setLoading(true)
             const response = await fetch(`http://localhost:3001/user-posts?user=${user}`, {
                 method: "GET",
             })
@@ -171,6 +197,10 @@ export default function ForumDataHook() {
             }
         } catch (error) {
             console.error(error)
+        } finally {
+            setTimeout(() => {
+                setLoading(false);
+            }, 2000);
         }
     }
 
@@ -219,6 +249,6 @@ export default function ForumDataHook() {
 
     return { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
         commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
-        getCurrPostComments, filterPosts, userView, deletePost
+        getCurrPostComments, filterPosts, userView, deletePost, loading, setLoading
      }
 }
