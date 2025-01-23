@@ -48,6 +48,7 @@ func main() {
 	r.Get("/user-posts", handlers.GetUserForumPosts(db.Get_Database()))
 
 	r.Delete("/delete-post", handlers.DeleteForumPost(db.Get_Database()))
+	r.Delete("/delete-comment", handlers.DeleteComment(db.Get_Database()))
 
 	r.Patch("/update-post", handlers.UpdatePost(db.Get_Database()))
 

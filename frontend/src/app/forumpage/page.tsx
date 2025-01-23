@@ -12,7 +12,7 @@ export default function forum() {
     const { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
         commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
         getCurrPostComments, filterPosts, userView, deletePost, loading, setLoading, errorPopup, setErrorPopup,
-        errorMessage, setErrorMessage } = ForumDataHook()
+        errorMessage, setErrorMessage, deleteComment } = ForumDataHook()
 
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
 
@@ -33,6 +33,10 @@ export default function forum() {
     const [deleteAlert, setDeleteAlert] = useState<boolean>(false)
 
     const [updateMode, setUpdateMode] = useState<boolean>(false)
+
+    const [delCommentPopup, setDelCommentPopup] = useState<boolean>(false)
+    const [delMenuAnchor, setDelMenuAnchor] = useState<null|HTMLElement>(null)
+    const [delCommentTarget, setDelCommentTarget] = useState<number>(0)
 
     const handlePostClick = async (index : number) => {
         setCurrPostIndex(index);
@@ -456,8 +460,21 @@ export default function forum() {
                                             <Box key={index} className='border-2 rounded-xl p-2'>
                                                 <Box sx={{display:'flex', flexDirection:'row', gap:1}}>
                                                     <Avatar>{x.commenter.charAt(0)}</Avatar>
-                                                    <Box>
-                                                        <Typography className="font-bold mt-2">{x.commenter}</Typography>
+                                                    <Box sx={{width:'100%'}}>
+                                                        <Box sx={{display:'flex', flexDirection:'row', justifyContent:'space-between'}}>
+                                                            <Typography className="font-bold mt-2">{x.commenter}</Typography>
+                                                            {
+                                                                x.commenter == user &&
+                                                                <Box>
+                                                                    <Button>
+                                                                        <EditNote/>
+                                                                    </Button>
+                                                                    <Button onClick={e => { setDelCommentTarget(index); setDelMenuAnchor(e.currentTarget); setDelCommentPopup(true) }}>
+                                                                        <DeleteOutline/>
+                                                                    </Button>
+                                                                </Box>                                                    
+                                                            }
+                                                        </Box>
                                                         <Typography>{x.comment}</Typography>
                                                         <Typography variant='body2' className="italic mt-2">{new Date(x.timing).toLocaleString()}</Typography>
                                                     </Box>
@@ -505,6 +522,16 @@ export default function forum() {
                         <Typography>{errorMessage}</Typography>
                     </Alert>
                 </Dialog>
+            }
+
+            {/* Delete Comment Menu Popup */}
+            {
+                <Menu open={delCommentPopup} anchorEl={delMenuAnchor} sx={{'& .MuiMenu-paper': { backgroundColor:'red'}}}
+                    onClose={() => { setDelCommentTarget(0); setDelCommentPopup(false); setDelMenuAnchor(null) }} disableScrollLock>
+                    <Typography className="p-2 text-white font-bold">Confirm deletion? Once done, data cannot be recovered.</Typography>
+                    <Button onClick={() => { deleteComment(delCommentTarget); setDelCommentPopup(false); setDelMenuAnchor(null); setDelCommentTarget(0) }}>Confirm</Button>
+                    <Button>Cancel</Button>
+                </Menu>
             }
         </Box>
     )

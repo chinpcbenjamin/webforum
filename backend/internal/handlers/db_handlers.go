@@ -325,6 +325,17 @@ func GetCommentsForPost(db *sql.DB) http.HandlerFunc {
 				"data": data,
 			})
 		}
+	}
+}
 
+func DeleteComment(db *sql.DB) http.HandlerFunc {
+	return func(writer http.ResponseWriter, http_request *http.Request) {
+		_, err := db.Exec("DELETE FROM comments WHERE commentid = ?", http_request.URL.Query().Get("commentID"))
+		if err != nil {
+			http.Error(writer, "Failed to delete post", http.StatusNotFound)
+			return
+		} else {
+			writer.WriteHeader(http.StatusNoContent)
+		}
 	}
 }

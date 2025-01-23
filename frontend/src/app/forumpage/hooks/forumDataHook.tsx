@@ -95,7 +95,7 @@ export default function ForumDataHook() {
                         'Content-Type' : 'application/json'
                     },
                     body: JSON.stringify({
-                        "postID" : data[currPostIndex].postid,
+                        "postID" : data[index].postid,
                         "commenter" : user,
                         "comment" : commentText.trim(),
                     })
@@ -125,7 +125,7 @@ export default function ForumDataHook() {
         }
         try {
             setLoading(true)
-            const response = await fetch(`http://localhost:3001/get-comments?postID=${data[currPostIndex].postid}`, {
+            const response = await fetch(`http://localhost:3001/get-comments?postID=${data[index].postid}`, {
                 method: "GET"
             })
             if (response.ok) {
@@ -152,7 +152,7 @@ export default function ForumDataHook() {
         }
         try {
             setLoading(true)
-            const response = await fetch(`http://localhost:3001/delete-post?postID=${data[currPostIndex].postid}`, {
+            const response = await fetch(`http://localhost:3001/delete-post?postID=${data[index].postid}`, {
                 method: "DELETE"
             })
             if (response.ok) {
@@ -225,6 +225,33 @@ export default function ForumDataHook() {
         }
     }
 
+    const deleteComment = async (index : number) => {
+        if (!commentData[index]) {
+            return
+        } else {
+            try {
+                setLoading(true)
+                const response = await fetch(`http://localhost:3001/delete-comment?commentID=${commentData[index].commentID}`, {
+                    method: "DELETE"
+                })
+                if (response.ok) {
+                    setUserView(false)
+                    getCurrPostComments(currPostIndex)
+                } else {
+                    setErrorMessage("Failed to delete comment. Please try again later")
+                    setErrorPopup(true)
+                }
+            } catch (error) {
+                setErrorMessage("Unknown error: " + error as string )
+                setErrorPopup(true)
+            } finally {
+                setTimeout(() => {
+                    setLoading(false);
+                }, 2000);
+            }
+        }
+    }
+
     const drawerList = (
         <Box sx={{width: 200}} className='flex flex-col'>
             <Box className='flex flex-row m-3'>
@@ -271,6 +298,6 @@ export default function ForumDataHook() {
     return { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
         commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
         getCurrPostComments, filterPosts, userView, deletePost, loading, setLoading, errorPopup, setErrorPopup,
-        errorMessage, setErrorMessage
+        errorMessage, setErrorMessage, deleteComment
      }
 }
