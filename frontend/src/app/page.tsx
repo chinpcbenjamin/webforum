@@ -12,6 +12,31 @@ export default function Home() {
     router.push('/loginpage/')
   }
 
+  React.useEffect(() => {
+      const verify_user : () => void = async () => {
+          try {
+              const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/verify`, {
+                  method: "POST",
+                  headers: {
+                      'Content-Type' : 'application/json'
+                  },
+                  body: JSON.stringify({
+                      "token": localStorage.getItem("token")
+                  })
+              })
+  
+              if (!response.ok) {
+                  return
+              } else {
+                  router.push("/forumpage")
+              }
+          } catch (error) {
+              alert('Unknown Error detected.')
+          }
+      }
+      verify_user()
+  }, [])
+
   return (
     <Container className='h-screen flex items-center justify-center'>
       <Typography variant='h1'>

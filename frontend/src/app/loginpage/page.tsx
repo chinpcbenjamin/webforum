@@ -1,5 +1,5 @@
 'use client'
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import { Container, Fab, Stack, Box, Typography, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, Alert } from '@mui/material';
 import { PersonOutline, Login, AccountCircle, ArrowBack, ArrowForward } from '@mui/icons-material';
 import clsx from 'clsx';
@@ -49,6 +49,33 @@ export default function LoginPage() {
     const handle_create_new_account_press : () => void = () => {
         setWindow(1)
     }
+
+    useEffect(() => {
+        const verify_user : () => void = async () => {
+            try {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/verify`, {
+                    method: "POST",
+                    headers: {
+                        'Content-Type' : 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "token": localStorage.getItem("token")
+                    })
+                })
+    
+                if (!response.ok) {
+                    return
+                } else {
+                    router.push("../forumpage")
+                }
+            } catch (error) {
+                setMessageAlert(true)
+                setMessageType(0)
+                setMessage('Unknown Error detected.')
+            }
+        }
+        verify_user()
+    }, [])
 
     const attempt_new_user_account_creation: () => void = async () => {
         if (password != cfmPW) {
