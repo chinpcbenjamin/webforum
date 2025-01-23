@@ -225,13 +225,13 @@ export default function forum() {
                             data.length != 0 &&
                             data.map((x, index) => 
                                 <ListItem key={index} sx={{justifyItems: 'center', minWidth:'100%', width:'100%'}}>
-                                    <Paper className="rounded-xl p-3 text-white" elevation={5}
+                                    <Paper className="rounded-xl p-3" elevation={5}
                                         onClick={() => { handlePostClick(index) }}
                                         sx={{minWidth:"100%", backgroundColor:postColours[index] }}>
-                                        <Typography className="font-bold "variant="h3">{x.title}</Typography>
-                                        <Typography className="mb-5" variant="body1">by: {x.username}</Typography>
+                                        <Typography className="font-bold text-white"variant="h3">{x.title}</Typography>
+                                        <Typography className="mb-5 text-white" variant="body1">by: {x.username}</Typography>
                                         <Stack direction='row' spacing={1}>
-                                            <Chip color="info" className="font-bold" label={x.category}></Chip>
+                                            <Chip color="info" className="font-bold text-white" label={x.category}></Chip>
                                         {
                                             String(x.keywords).split(",").map((y, id) => (
                                                 <Chip sx={{backgroundColor:'whitesmoke'}} className="font-bold" key={id} label={y}></Chip>
@@ -410,7 +410,7 @@ export default function forum() {
                             </Box>
                         </Alert>
                     }
-                    <Box sx={{ backgroundColor: postColours[currPostIndex] }} className='text-white'>
+                    <Box sx={{ backgroundColor: postColours[currPostIndex] }}>
                         <Box sx={{display: 'flex', justifyContent:'flex-end' }}>
                             {
                                 data[currPostIndex].username == user &&
@@ -430,13 +430,13 @@ export default function forum() {
                             </Button>
                         </Box>
                         <Box className='p-2'>
-                            <Typography className="font-bold" variant="h3" sx={{justifySelf:'center'}}>{data[currPostIndex].title}</Typography>
+                            <Typography className="font-bold text-white" variant="h3" sx={{justifySelf:'center'}}>{data[currPostIndex].title}</Typography>
                             <Typography
-                                className="mb-5" variant="body1"
+                                className="mb-5 text-white" variant="body1"
                                 sx={{justifySelf:'center'}}>by: {data[currPostIndex].username} on {new Date(data[currPostIndex].time).toLocaleString()}
                             </Typography>
                             <Stack direction='row' spacing={1}>
-                                <Chip color="info" className="font-bold" label={data[currPostIndex].category}></Chip>
+                                <Chip color="info" className="font-bold text-white" label={data[currPostIndex].category}></Chip>
                                 {
                                     String(data[currPostIndex].keywords).split(",").map((y, id) => (
                                         <Chip sx={{backgroundColor:'whitesmoke'}} className="font-bold" key={id} label={y}></Chip>

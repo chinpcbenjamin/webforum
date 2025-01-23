@@ -42,8 +42,6 @@ export default function LoginPage() {
     const [messageAlert, setMessageAlert] = React.useState<boolean>(false)
     const [messageType, setMessageType] = React.useState<number>(0)
 
-    const [guestAlertOpen, setGuestAlertOpen] = React.useState<boolean>(false)
-
     const router = useRouter()
     
     const handle_create_new_account_press : () => void = () => {
@@ -160,24 +158,11 @@ export default function LoginPage() {
         }
     }
 
-    const handle_guest_sign_in : () => void = () => {
-        setGuestAlertOpen(true)
-    }
-
-    const confirm_guest_sign_in : () => void = () => {
-        setGuestAlertOpen(false)
-        route_to_forumpage()
-    }
-
     const return_to_window_0: () => void = () => {
         setUsername('')
         setPassword('')
         setCfmPW('')
         setWindow(0)
-    }
-
-    const route_to_forumpage : () => void = () => {
-        router.push("/forumpage")
     }
 
     const handle_forward_button: () => void = () => {
@@ -211,12 +196,12 @@ export default function LoginPage() {
                         <Login/>
                     </Container>
                 }
-                <Stack spacing={3}>
+                <Stack spacing={4}>
                     {
                         window == 0 &&
                         <LoginOptionTile
                             title='Create new account'
-                            className='bg-blue-400 hover:bg-blue-300 text-white'
+                            className='bg-blue-400 text-white'
                             onClick={handle_create_new_account_press}>
                         </LoginOptionTile>
                         
@@ -226,16 +211,7 @@ export default function LoginPage() {
                         <LoginOptionTile
                             title='I already have an account'
                             onClick={() => setWindow(2)}
-                            className='bg-gray-400 hover:bg-gray-300 text-white'>
-                        </LoginOptionTile>
-                    }
-                    {
-                        window == 0 &&
-                        <LoginOptionTile
-                            title='Guest Sign-In'
-                            className='bg-black hover:bg-gray-700 text-white'
-                            onClick={handle_guest_sign_in}>
-                            <PersonOutline/>
+                            className='bg-gray-400 text-white'>
                         </LoginOptionTile>
                     }
                     {
@@ -301,20 +277,6 @@ export default function LoginPage() {
                     </Stack>
                 }
             </Box>
-            <Dialog
-                open={guestAlertOpen}
-                onClose={() => setGuestAlertOpen(false)}>
-                <DialogTitle>
-                    Proceed with Guest Sign-In?
-                </DialogTitle>
-                <DialogContent>
-                    By signing in as a guest, you will not be able to perform certain actions such as commenting. Would you still like to proceed?
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={() => setGuestAlertOpen(false)}>Disagree</Button>
-                    <Button onClick={confirm_guest_sign_in}>Agree</Button>
-                </DialogActions>
-            </Dialog>
         </Container>
     )
 }
