@@ -12,7 +12,7 @@ export default function forum() {
     const { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
         commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
         getCurrPostComments, filterPosts, userView, deletePost, loading, setLoading, errorPopup, setErrorPopup,
-        errorMessage, setErrorMessage, deleteComment } = ForumDataHook()
+        errorMessage, setErrorMessage, deleteComment, updateComment } = ForumDataHook()
 
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
 
@@ -36,7 +36,9 @@ export default function forum() {
 
     const [delCommentPopup, setDelCommentPopup] = useState<boolean>(false)
     const [delMenuAnchor, setDelMenuAnchor] = useState<null|HTMLElement>(null)
-    const [delCommentTarget, setDelCommentTarget] = useState<number>(0)
+    const [commentTarget, setCommentTarget] = useState<number>(0)
+
+    const [updateCommentMode, setUpdateCommentMode] = useState<boolean>(false)
 
     const handlePostClick = async (index : number) => {
         setCurrPostIndex(index);
@@ -376,9 +378,12 @@ export default function forum() {
                 <Menu open={popup == 'filter'} anchorEl={filterMenuAnchor}
                     onClose={() => {setFilterMenuAnchor(null); setPopup('')}} disableScrollLock>
                     <FormGroup sx={{minWidth:320, padding:2, gap:2}}>
-                        <FormControlLabel label='Suggestion'control={<Checkbox checked={filterArray[0]} onClick={() => setFilterArray([!filterArray[0], filterArray[1], filterArray[2]])} />}/>
-                        <FormControlLabel label='Problem' control={<Checkbox checked={filterArray[1]} onClick={() => setFilterArray([filterArray[0], !filterArray[1], filterArray[2]])}/>}/>
-                        <FormControlLabel label='General' control={<Checkbox checked={filterArray[2]} onClick={() => setFilterArray([filterArray[0], filterArray[1], !filterArray[2]])}/>}/>
+                        <FormControlLabel label='Suggestion'control={<Checkbox checked={filterArray[0]}
+                            onClick={() => setFilterArray([!filterArray[0], filterArray[1], filterArray[2]])} />}/>
+                        <FormControlLabel label='Problem' control={<Checkbox checked={filterArray[1]}
+                            onClick={() => setFilterArray([filterArray[0], !filterArray[1], filterArray[2]])}/>}/>
+                        <FormControlLabel label='General' control={<Checkbox checked={filterArray[2]}
+                            onClick={() => setFilterArray([filterArray[0], filterArray[1], !filterArray[2]])}/>}/>
                     </FormGroup>
                 </Menu>
             }
@@ -466,10 +471,16 @@ export default function forum() {
                                                             {
                                                                 x.commenter == user &&
                                                                 <Box>
-                                                                    <Button>
+                                                                    <Button onClick={() => {
+                                                                        setCommentTarget(index); setCommentText(x.comment);
+                                                                        setCommentError(false); setUpdateCommentMode(true)
+                                                                        }}>
                                                                         <EditNote/>
                                                                     </Button>
-                                                                    <Button onClick={e => { setDelCommentTarget(index); setDelMenuAnchor(e.currentTarget); setDelCommentPopup(true) }}>
+                                                                    <Button onClick={e => {
+                                                                        setCommentTarget(index); setDelMenuAnchor(e.currentTarget);
+                                                                        setDelCommentPopup(true)
+                                                                        }}>
                                                                         <DeleteOutline/>
                                                                     </Button>
                                                                 </Box>                                                    
@@ -527,11 +538,33 @@ export default function forum() {
             {/* Delete Comment Menu Popup */}
             {
                 <Menu open={delCommentPopup} anchorEl={delMenuAnchor} sx={{'& .MuiMenu-paper': { backgroundColor:'red'}}}
-                    onClose={() => { setDelCommentTarget(0); setDelCommentPopup(false); setDelMenuAnchor(null) }} disableScrollLock>
+                    onClose={() => { setCommentTarget(0); setDelCommentPopup(false); setDelMenuAnchor(null) }} disableScrollLock>
                     <Typography className="p-2 text-white font-bold">Confirm deletion? Once done, data cannot be recovered.</Typography>
-                    <Button onClick={() => { deleteComment(delCommentTarget); setDelCommentPopup(false); setDelMenuAnchor(null); setDelCommentTarget(0) }}>Confirm</Button>
-                    <Button>Cancel</Button>
+                    <Button onClick={() => { deleteComment(commentTarget); setDelCommentPopup(false); setDelMenuAnchor(null); setCommentTarget(0) }}>Confirm</Button>
+                    <Button onClick={() => { setCommentTarget(0); setDelCommentPopup(false); setDelMenuAnchor(null) }}>Cancel</Button>
                 </Menu>
+            }
+            {/* Update Comment Popup */}
+            {
+                <Dialog open={updateCommentMode} maxWidth='sm' fullWidth>
+                    <Typography variant="h5" className="p-2">Update comment</Typography>
+                    <TextField fullWidth variant="outlined" value={commentText} onChange={e => setCommentText(e.target.value)}
+                            error={commentError} helperText={commentError ? "Please enter a valid comment" : ""}
+                            placeholder="Type your comment here." size="small" multiline className="mt-3 p-2"
+                            slotProps={{
+                                input: {
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <AddComment/>
+                                        </InputAdornment>
+                                    )
+                                }
+                            }}/>
+                    <DialogActions>
+                        <Button onClick={ () => { setUpdateCommentMode(false); setCommentTarget(0); setCommentError(false); setCommentText('') }}>Cancel</Button>
+                        <Button onClick={ () => { updateComment(commentTarget); setUpdateCommentMode(false); setCommentError(false); setCommentText('') }}>Update</Button>
+                    </DialogActions>
+                </Dialog>
             }
         </Box>
     )

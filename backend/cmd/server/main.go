@@ -51,6 +51,7 @@ func main() {
 	r.Delete("/delete-comment", handlers.DeleteComment(db.Get_Database()))
 
 	r.Patch("/update-post", handlers.UpdatePost(db.Get_Database()))
+	r.Patch("/update-comment", handlers.UpdateComment(db.Get_Database()))
 
 	http.ListenAndServe(":3001", r)
 }

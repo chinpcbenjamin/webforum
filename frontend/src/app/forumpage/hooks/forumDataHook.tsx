@@ -235,10 +235,47 @@ export default function ForumDataHook() {
                     method: "DELETE"
                 })
                 if (response.ok) {
-                    setUserView(false)
                     getCurrPostComments(currPostIndex)
                 } else {
                     setErrorMessage("Failed to delete comment. Please try again later")
+                    setErrorPopup(true)
+                }
+            } catch (error) {
+                setErrorMessage("Unknown error: " + error as string )
+                setErrorPopup(true)
+            } finally {
+                setTimeout(() => {
+                    setLoading(false);
+                }, 2000);
+            }
+        }
+    }
+
+    const updateComment = async (index : number) => {
+        if (!commentData[index]) {
+            return
+        } else if (commentText.trim() == "") {
+            setCommentError(true)
+        } else {
+            try {
+                const response = await fetch("http://localhost:3001/update-comment", {
+                    method: "PATCH",
+                    headers: {
+                        'Content-Type' : 'application/json'
+                    },
+                    body: JSON.stringify({
+                        "commentID" : commentData[index].commentID,
+                        "comment" : commentText.trim()
+                    })
+                })
+
+                if (response.ok) {
+                    getCurrPostComments(currPostIndex)
+                } else if (response.status == 400) {
+                    setErrorMessage("Invalid comment")
+                    setErrorPopup(true)
+                } else if (response.status == 500) {
+                    setErrorMessage("Internal Server Error. Please try again later")
                     setErrorPopup(true)
                 }
             } catch (error) {
@@ -298,6 +335,6 @@ export default function ForumDataHook() {
     return { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
         commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
         getCurrPostComments, filterPosts, userView, deletePost, loading, setLoading, errorPopup, setErrorPopup,
-        errorMessage, setErrorMessage, deleteComment
+        errorMessage, setErrorMessage, deleteComment, updateComment
      }
 }

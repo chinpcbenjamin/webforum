@@ -63,7 +63,7 @@ func UpdatePost(db *sql.DB) http.HandlerFunc {
 		_, err := db.Exec(update, request.Title, request.Category, request.Keywords, request.Description, request.PostID)
 
 		if err != nil {
-			http.Error(writer, "Failed to add new user", http.StatusInternalServerError)
+			http.Error(writer, "Failed to update user", http.StatusInternalServerError)
 			return
 		}
 
@@ -337,5 +337,30 @@ func DeleteComment(db *sql.DB) http.HandlerFunc {
 		} else {
 			writer.WriteHeader(http.StatusNoContent)
 		}
+	}
+}
+
+func UpdateComment(db *sql.DB) http.HandlerFunc {
+	return func(writer http.ResponseWriter, http_request *http.Request) {
+		type UpdateComment struct {
+			CommentID int    `json:"commentID"`
+			Comment   string `json:"comment"`
+		}
+
+		var request UpdateComment
+		err := json.NewDecoder(http_request.Body).Decode(&request)
+
+		if err != nil {
+			http.Error(writer, "Invalid request", http.StatusBadRequest)
+			return
+		}
+
+		_, err = db.Exec("UPDATE comments SET comment = ? WHERE commentid = ?", request.Comment, request.CommentID)
+		if err != nil {
+			http.Error(writer, "Failed to update", http.StatusInternalServerError)
+			return
+		}
+		writer.WriteHeader(http.StatusNoContent)
+
 	}
 }
