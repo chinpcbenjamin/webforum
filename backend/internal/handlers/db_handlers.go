@@ -45,12 +45,12 @@ func AddNewPost(db *sql.DB) http.HandlerFunc {
 func UpdatePost(db *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, http_request *http.Request) {
 		type ForumPostUpdate struct {
-			OriginalTitle string `json:"origTitle"`
-			Title         string `json:"title"`
-			Username      string `json:"username"`
-			Category      string `json:"category"`
-			Keywords      string `json:"keywords"`
-			Description   string `json:"description"`
+			PostID      int    `json:"postID"`
+			Title       string `json:"title"`
+			Username    string `json:"username"`
+			Category    string `json:"category"`
+			Keywords    string `json:"keywords"`
+			Description string `json:"description"`
 		}
 
 		var request ForumPostUpdate
@@ -59,8 +59,8 @@ func UpdatePost(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		update := "UPDATE posts SET title = ?, category = ?, keywords = ?, description = ? WHERE title = ? AND username = ?"
-		_, err := db.Exec(update, request.Title, request.Category, request.Keywords, request.Description, request.OriginalTitle, request.Username)
+		update := "UPDATE posts SET title = ?, category = ?, keywords = ?, description = ? WHERE postid = ?"
+		_, err := db.Exec(update, request.Title, request.Category, request.Keywords, request.Description, request.PostID)
 
 		if err != nil {
 			http.Error(writer, "Failed to add new user", http.StatusInternalServerError)

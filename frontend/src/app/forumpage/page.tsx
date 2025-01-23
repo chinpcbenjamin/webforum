@@ -104,9 +104,8 @@ export default function forum() {
                         'Content-Type' : 'application/json'
                     },
                     body: JSON.stringify({
-                        'origTitle' : data[currPostIndex].title,
+                        'postID' : data[currPostIndex].postid,
                         'title': title.trim(),
-                        'username' : user,
                         'category' : category,
                         'keywords' : keywords.reduce((a, b) => a.concat(',').concat(b)),
                         'description' : description.trim()
