@@ -11,7 +11,8 @@ import ForumDataHook from "./hooks/forumDataHook"
 export default function forum() {
     const { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
         commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
-        getCurrPostComments, filterPosts, userView, deletePost, loading, setLoading } = ForumDataHook()
+        getCurrPostComments, filterPosts, userView, deletePost, loading, setLoading, errorPopup, setErrorPopup,
+        errorMessage, setErrorMessage } = ForumDataHook()
 
     const [drawerOpen, setDrawerOpen] = useState<boolean>(false)
 
@@ -68,11 +69,20 @@ export default function forum() {
                     setKeywords([])
                     setKeywordsText('')
                     retrieveForumData()
-                } else {
+                } else if (response.status == 400) {
+                    setErrorPopup(true)
+                    setErrorMessage("Invalid request body. Please check that your fields are valid")
                     setNewPostError(true)
+                } else if (response.status == 409) {
+                    setErrorPopup(true)
+                    setErrorMessage("Another post that you have made has the same title. Please choose another title.")
+                } else if (response.status == 500) {
+                    setErrorPopup(true)
+                    setErrorMessage('Internal Server Error. Please try again later.')
                 }
             } catch (error) {
-                console.error(error)
+                setErrorPopup(true)
+                setErrorMessage(error as string)
             } finally {
                 setTimeout(() => {
                     setLoading(false);
@@ -94,6 +104,7 @@ export default function forum() {
                         'Content-Type' : 'application/json'
                     },
                     body: JSON.stringify({
+                        'origTitle' : data[currPostIndex].title,
                         'title': title.trim(),
                         'username' : user,
                         'category' : category,
@@ -101,7 +112,6 @@ export default function forum() {
                         'description' : description.trim()
                     })
                 })
-
                 if (response.ok) {
                     setPopup('')
                     setTitle('')
@@ -110,8 +120,13 @@ export default function forum() {
                     setKeywords([])
                     setKeywordsText('')
                     retrieveForumData()
-                } else {
+                } else if (response.status == 400) {
+                    setErrorPopup(true)
+                    setErrorMessage("Invalid request body. Please check that your fields are valid")
                     setNewPostError(true)
+                } else if (response.status == 500) {
+                    setErrorPopup(true)
+                    setErrorMessage('Internal Server Error. Please try again later.')
                 }
             } catch (error) {
                 console.error(error)
@@ -124,8 +139,10 @@ export default function forum() {
     }
 
     const handleConfirmDelete = async (index : number) => {
+        console.log(index, currPostIndex)
         await deletePost(index)
         setPopup('')
+        setDeleteAlert(false)
     }
 
     const handleUpdatePress = () => {
@@ -421,7 +438,7 @@ export default function forum() {
                         </Box>
                     </Box>
                     <Box sx={{padding:2}}>
-                        <Typography variant="body1">{data[currPostIndex].description}</Typography>
+                        <Typography variant="body1" sx={{ whiteSpace: 'pre-line', wordWrap: 'break-word' }}>{data[currPostIndex].description}</Typography>
                     </Box>
                     <Box sx={{padding:1, backgroundColor:'whitesmoke'}}>
                         <Typography variant="body2"></Typography>
@@ -474,11 +491,21 @@ export default function forum() {
                     </Box>
                 </Dialog>
             }
+
             {/* Loading */}
             {
                 <Backdrop open={loading}>
                     <CircularProgress/>
                 </Backdrop>
+            }
+
+            {/* Error Dedicated Popup */}
+            {
+                <Dialog open={errorPopup} maxWidth='sm' fullWidth>
+                    <Alert severity="error" action={<Button onClick={() => { setErrorPopup(false); setErrorMessage('') }}><Close/></Button>}>
+                        <Typography>{errorMessage}</Typography>
+                    </Alert>
+                </Dialog>
             }
         </Box>
     )

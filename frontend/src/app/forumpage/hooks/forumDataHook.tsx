@@ -21,6 +21,9 @@ export default function ForumDataHook() {
 
     const [loading, setLoading] = useState<boolean>(false)
 
+    const [errorPopup, setErrorPopup] = useState<boolean>(false)
+    const [errorMessage, setErrorMessage] = useState<string>('')
+
     useEffect(() => {
         const verify_user : () => void = async () => {
             try {
@@ -41,9 +44,9 @@ export default function ForumDataHook() {
                     const a = await response.json()
                     setUser(a.username)
                 }
-    
             } catch (error) {
-                console.error(error)
+                setErrorPopup(true)
+                setErrorMessage('Unknown Error detected.')
             }
         }
         verify_user()
@@ -57,11 +60,18 @@ export default function ForumDataHook() {
             })
             if (response.ok) {
                 const a = await response.json()
+                console.log(a.data)
                 setData(a.data)
                 a.data.forEach((x : any) => postColours.push(bgColors[Math.floor(Math.random() * 10)]))
+            } else if (response.status == 404) {
+                setData([])
+            } else if (response.status == 500) {
+                setErrorMessage("Internal Server Error when fetching data.")
+                setErrorPopup(true)
             }
         } catch (error) {
-            console.error(error)
+            setErrorMessage("No posts have been made yet. Why not be the first?")
+            setErrorPopup(true)
         } finally {
             setTimeout(() => {
                 setLoading(false);
@@ -85,10 +95,9 @@ export default function ForumDataHook() {
                         'Content-Type' : 'application/json'
                     },
                     body: JSON.stringify({
+                        "postID" : data[currPostIndex].postid,
                         "commenter" : user,
                         "comment" : commentText.trim(),
-                        "title" : data[currPostIndex].title,
-                        "username" : data[currPostIndex].username
                     })
                 })
 
@@ -100,7 +109,8 @@ export default function ForumDataHook() {
                     setCommentError(true)
                 }
             } catch (error) {
-                console.error(error)
+                setErrorMessage("Unknown error: " + error as string )
+                setErrorPopup(true)
             } finally {
                 setTimeout(() => {
                     setLoading(false);
@@ -115,7 +125,7 @@ export default function ForumDataHook() {
         }
         try {
             setLoading(true)
-            const response = await fetch(`http://localhost:3001/get-comments?title=${data[index].title}&username=${data[index].username}`, {
+            const response = await fetch(`http://localhost:3001/get-comments?postID=${data[currPostIndex].postid}`, {
                 method: "GET"
             })
             if (response.ok) {
@@ -127,7 +137,8 @@ export default function ForumDataHook() {
                 return false
             }
         } catch (error) {
-            console.error(error)
+            setErrorMessage("Unknown error: " + error as string )
+            setErrorPopup(true)
         } finally {
             setTimeout(() => {
                 setLoading(false);
@@ -141,15 +152,19 @@ export default function ForumDataHook() {
         }
         try {
             setLoading(true)
-            const response = await fetch(`http://localhost:3001/delete-post?title=${data[index].title}&username=${data[index].username}`, {
+            const response = await fetch(`http://localhost:3001/delete-post?postID=${data[currPostIndex].postid}`, {
                 method: "DELETE"
             })
             if (response.ok) {
-                retrieveForumData()
                 setUserView(false)
+                retrieveForumData()
+            } else {
+                setErrorMessage("Failed to delete post. Please try again later")
+                setErrorPopup(true)
             }
         } catch (error) {
-            console.error(error)
+            setErrorMessage("Unknown error: " + error as string )
+            setErrorPopup(true)
         } finally {
             setTimeout(() => {
                 setLoading(false);
@@ -170,11 +185,13 @@ export default function ForumDataHook() {
                 const a = await response.json()
                 setData(a.data)
                 a.data.forEach((x : any) => postColours.push(bgColors[Math.floor(Math.random() * 10)]))
-            } else {
-                console.error("error")
+            } else if (response.status == 500) {
+                setErrorMessage("Internal Server Error. Please try again later")
+                setErrorPopup(true)
             }
         } catch (error) {
-            console.error(error)
+            setErrorMessage("Unknown error: " + error as string )
+            setErrorPopup(true)
         } finally {
             setTimeout(() => {
                 setLoading(false);
@@ -194,9 +211,13 @@ export default function ForumDataHook() {
                 const a = await response.json()
                 setData(a.data)
                 a.data.forEach((x : any) => postColours.push(bgColors[Math.floor(Math.random() * 10)]))
+            } else if (response.status == 500) {
+                setErrorMessage("Internal Server Error. Please try again later")
+                setErrorPopup(true)
             }
         } catch (error) {
-            console.error(error)
+            setErrorMessage("Unknown error: " + error as string )
+            setErrorPopup(true)
         } finally {
             setTimeout(() => {
                 setLoading(false);
@@ -249,6 +270,7 @@ export default function ForumDataHook() {
 
     return { user, data, postColours, retrieveForumData, drawerList, currPostIndex, setCurrPostIndex,
         commentText, setCommentText, commentData, setCommentData, commentError, setCommentError, handleNewComment,
-        getCurrPostComments, filterPosts, userView, deletePost, loading, setLoading
+        getCurrPostComments, filterPosts, userView, deletePost, loading, setLoading, errorPopup, setErrorPopup,
+        errorMessage, setErrorMessage
      }
 }

@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -18,8 +19,22 @@ func Initialise_Database() {
 		log.Fatal(err)
 	}
 
+	_, err = database.Exec("PRAGMA foreign_keys = ON;")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var fkEnabled int
+	row := database.QueryRow("PRAGMA foreign_keys;")
+	err = row.Scan(&fkEnabled)
+	fmt.Println(err)
+	if fkEnabled == 1 {
+		fmt.Println("Foreign keys are enabled.")
+	} else {
+		fmt.Println("Foreign keys are disabled.")
+	}
+
 	createTable := `CREATE TABLE IF NOT EXISTS users (
-		username TEXT PRIMARY KEY NOT NULL,
+		username TEXT PRIMARY KEY,
 		password TEXT NOT NULL
 	);`
 
@@ -28,14 +43,14 @@ func Initialise_Database() {
 	}
 
 	createTable = `CREATE TABLE IF NOT EXISTS posts (
+		postid INTEGER PRIMARY KEY AUTOINCREMENT,
 		title TEXT NOT NULL,
 		username TEXT NOT NULL
 			REFERENCES users (username),
 		category TEXT NOT NULL,
 		keywords TEXT NOT NULL,
 		description TEXT NOT NULL,
-		timing TIMESTAMP NOT NULL,
-		PRIMARY KEY (title, username)
+		timing TIMESTAMP NOT NULL
 	);`
 
 	if _, err := database.Exec(createTable); err != nil {
@@ -43,17 +58,14 @@ func Initialise_Database() {
 	}
 
 	createTable = `CREATE TABLE IF NOT EXISTS comments (
+		commentid INTEGER PRIMARY KEY AUTOINCREMENT,
+		post INTEGER NOT NULL
+			REFERENCES posts (postid)
+			ON DELETE CASCADE,
 		commenter TEXT NOT NULL
 			REFERENCES users (username),
 		comment TEXT NOT NULL,
-		timing TIMESTAMP NOT NULL,
-		title TEXT NOT NULL,
-		username TEXT NOT NULL,
-		FOREIGN KEY (title, username)
-			REFERENCES posts (title, username)
-			ON DELETE CASCADE
-			ON UPDATE CASCADE,
-		PRIMARY KEY (commenter, timing, title, username)
+		timing TIMESTAMP NOT NULL
 	);`
 
 	if _, err := database.Exec(createTable); err != nil {

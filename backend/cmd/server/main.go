@@ -25,7 +25,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"}, //allows requests from my frontend. may need to change
+		AllowedOrigins:   []string{"http://localhost:3000"},
 		AllowedMethods:   []string{"POST", "GET", "DELETE", "PATCH"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,

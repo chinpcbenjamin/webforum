@@ -6,29 +6,35 @@ import (
 	"net/http"
 	"strings"
 	"time"
-)
 
-type ForumPost struct {
-	Title       string `json:"title"`
-	Username    string `json:"username"`
-	Category    string `json:"category"`
-	Keywords    string `json:"keywords"`
-	Description string `json:"description"`
-}
+	"github.com/mattn/go-sqlite3"
+)
 
 func AddNewPost(db *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, http_request *http.Request) {
+		type ForumPost struct {
+			Title       string `json:"title"`
+			Username    string `json:"username"`
+			Category    string `json:"category"`
+			Keywords    string `json:"keywords"`
+			Description string `json:"description"`
+		}
+
 		var request ForumPost
 		if err := json.NewDecoder(http_request.Body).Decode(&request); err != nil {
 			http.Error(writer, "Invalid Request Body", http.StatusBadRequest)
+			return
 		}
 
-		insertion := "INSERT INTO posts VALUES (?, ?, ?, ?, ?, ?)"
+		insertion := "INSERT INTO posts (title, username, category, keywords, description, timing) VALUES (?, ?, ?, ?, ?, ?)"
 		_, err := db.Exec(insertion, request.Title, request.Username,
 			request.Category, request.Keywords, request.Description, time.Now())
 
-		if err != nil {
-			http.Error(writer, "Failed to add new user", http.StatusInternalServerError)
+		if err == sqlite3.ErrConstraint {
+			http.Error(writer, "Item already exists", http.StatusConflict)
+			return
+		} else if err != nil {
+			http.Error(writer, "Failed to add new post", http.StatusInternalServerError)
 			return
 		}
 
@@ -38,13 +44,23 @@ func AddNewPost(db *sql.DB) http.HandlerFunc {
 
 func UpdatePost(db *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, http_request *http.Request) {
-		var request ForumPost
+		type ForumPostUpdate struct {
+			OriginalTitle string `json:"origTitle"`
+			Title         string `json:"title"`
+			Username      string `json:"username"`
+			Category      string `json:"category"`
+			Keywords      string `json:"keywords"`
+			Description   string `json:"description"`
+		}
+
+		var request ForumPostUpdate
 		if err := json.NewDecoder(http_request.Body).Decode(&request); err != nil {
 			http.Error(writer, "Invalid Request Body", http.StatusBadRequest)
+			return
 		}
 
 		update := "UPDATE posts SET title = ?, category = ?, keywords = ?, description = ? WHERE title = ? AND username = ?"
-		_, err := db.Exec(update, request.Title, request.Category, request.Keywords, request.Description, request.Title, request.Username)
+		_, err := db.Exec(update, request.Title, request.Category, request.Keywords, request.Description, request.OriginalTitle, request.Username)
 
 		if err != nil {
 			http.Error(writer, "Failed to add new user", http.StatusInternalServerError)
@@ -56,6 +72,7 @@ func UpdatePost(db *sql.DB) http.HandlerFunc {
 }
 
 type ForumPostReturn struct {
+	PostID      int       `json:"postid"`
 	Title       string    `json:"title"`
 	Username    string    `json:"username"`
 	Category    string    `json:"category"`
@@ -68,9 +85,11 @@ func GetAllForumData(db *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, http_request *http.Request) {
 		rows, err := db.Query("SELECT * FROM posts ORDER BY timing DESC")
 		if err == sql.ErrNoRows {
-			http.Error(writer, "No forum data available", http.StatusNoContent)
+			http.Error(writer, "No forum data available", http.StatusNotFound)
+			return
 		}
 
+		var id int
 		var title string
 		var username string
 		var category string
@@ -81,16 +100,18 @@ func GetAllForumData(db *sql.DB) http.HandlerFunc {
 		var data []ForumPostReturn
 
 		for rows.Next() && err == nil {
-			err = rows.Scan(&title, &username, &category, &keywords, &description, &timing)
+			err = rows.Scan(&id, &title, &username, &category, &keywords, &description, &timing)
 			if err != nil {
 				http.Error(writer, "Failed to scan", http.StatusInternalServerError)
+				return
 			}
-			var post ForumPostReturn = ForumPostReturn{title, username, category, keywords, description, timing}
+			var post ForumPostReturn = ForumPostReturn{id, title, username, category, keywords, description, timing}
 			data = append(data, post)
 		}
 
 		if len(data) == 0 {
-			http.Error(writer, "Failed to get posts", http.StatusInternalServerError)
+			http.Error(writer, "Failed to get posts", http.StatusNotFound)
+			return
 		} else {
 			writer.Header().Set("Content-Type", "application/json")
 			writer.WriteHeader(http.StatusOK)
@@ -140,6 +161,7 @@ func GetFilteredForumData(db *sql.DB) http.HandlerFunc {
 
 		query += " ORDER BY timing DESC"
 
+		var id int
 		var title string
 		var username string
 		var category string
@@ -155,16 +177,18 @@ func GetFilteredForumData(db *sql.DB) http.HandlerFunc {
 		}
 
 		for rows.Next() && err == nil {
-			err = rows.Scan(&title, &username, &category, &keywords, &description, &timing)
+			err = rows.Scan(&id, &title, &username, &category, &keywords, &description, &timing)
 			if err != nil {
 				http.Error(writer, "Failed to scan", http.StatusInternalServerError)
+				return
 			}
-			var post ForumPostReturn = ForumPostReturn{title, username, category, keywords, description, timing}
+			var post ForumPostReturn = ForumPostReturn{id, title, username, category, keywords, description, timing}
 			data = append(data, post)
 		}
 
 		if len(data) == 0 {
 			http.Error(writer, "Failed to get posts", http.StatusNotFound)
+			return
 		} else {
 			writer.Header().Set("Content-Type", "application/json")
 			writer.WriteHeader(http.StatusOK)
@@ -183,6 +207,7 @@ func GetUserForumPosts(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		var id int
 		var title string
 		var username string
 		var category string
@@ -193,16 +218,18 @@ func GetUserForumPosts(db *sql.DB) http.HandlerFunc {
 		var data []ForumPostReturn
 
 		for rows.Next() {
-			err = rows.Scan(&title, &username, &category, &keywords, &description, &timing)
+			err = rows.Scan(&id, &title, &username, &category, &keywords, &description, &timing)
 			if err != nil {
 				http.Error(writer, "Failed to scan", http.StatusInternalServerError)
+				return
 			}
-			var post ForumPostReturn = ForumPostReturn{title, username, category, keywords, description, timing}
+			var post ForumPostReturn = ForumPostReturn{id, title, username, category, keywords, description, timing}
 			data = append(data, post)
 		}
 
 		if len(data) == 0 {
-			http.Error(writer, "Failed to get posts", http.StatusInternalServerError)
+			http.Error(writer, "Failed to get posts", http.StatusNotFound)
+			return
 		} else {
 			writer.Header().Set("Content-Type", "application/json")
 			writer.WriteHeader(http.StatusOK)
@@ -215,27 +242,26 @@ func GetUserForumPosts(db *sql.DB) http.HandlerFunc {
 
 func DeleteForumPost(db *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, http_request *http.Request) {
-		title := http_request.URL.Query().Get("title")
-		username := http_request.URL.Query().Get("username")
+		postID := http_request.URL.Query().Get("postID")
 
-		_, err := db.Exec("DELETE FROM posts WHERE title=? AND username=?", title, username)
+		_, err := db.Exec("DELETE FROM posts WHERE postid = ?", postID)
 		if err != nil {
 			http.Error(writer, "Failed to delete post", http.StatusNotFound)
+			return
 		} else {
 			writer.WriteHeader(http.StatusNoContent)
 		}
 	}
 }
 
-type NewComment struct {
-	Commenter string `json:"commenter"`
-	Comment   string `json:"comment"`
-	Title     string `json:"title"`
-	Username  string `json:"username"`
-}
-
 func AddNewComment(db *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, http_request *http.Request) {
+		type NewComment struct {
+			Post      int    `json:"postID"`
+			Commenter string `json:"commenter"`
+			Comment   string `json:"comment"`
+		}
+
 		var new_comment NewComment
 		err := json.NewDecoder(http_request.Body).Decode(&new_comment)
 		if err != nil {
@@ -243,12 +269,12 @@ func AddNewComment(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		_, err = db.Exec("INSERT INTO comments VALUES (?, ?, ?, ?, ?)",
-			new_comment.Commenter, new_comment.Comment, time.Now(), new_comment.Title, new_comment.Username,
-		)
+		_, err = db.Exec("INSERT INTO comments (post, commenter, comment, timing) VALUES (?, ?, ?, ?)",
+			new_comment.Post, new_comment.Commenter, new_comment.Comment, time.Now())
 
 		if err != nil {
 			http.Error(writer, "Could not insert into database", http.StatusInternalServerError)
+			return
 		}
 
 		writer.WriteHeader(http.StatusCreated)
@@ -257,20 +283,21 @@ func AddNewComment(db *sql.DB) http.HandlerFunc {
 
 func GetCommentsForPost(db *sql.DB) http.HandlerFunc {
 	return func(writer http.ResponseWriter, http_request *http.Request) {
-		title := http_request.URL.Query().Get("title")
-		username := http_request.URL.Query().Get("username")
+		postID := http_request.URL.Query().Get("postID")
 
-		rows, err := db.Query("SELECT commenter, comment, timing FROM comments WHERE title = ? AND username = ?", title, username)
+		rows, err := db.Query("SELECT commentid, commenter, comment, timing FROM comments WHERE post = ?", postID)
 		if err == sql.ErrNoRows {
 			http.Error(writer, "No forum data available", http.StatusNotFound)
 			return
 		}
 
+		var commentID int
 		var commenter string
 		var comment string
 		var timing time.Time
 
 		type commentReturn struct {
+			CommentID int       `json:"commentID"`
 			Commenter string    `json:"commenter"`
 			Comment   string    `json:"comment"`
 			Timing    time.Time `json:"timing"`
@@ -279,16 +306,18 @@ func GetCommentsForPost(db *sql.DB) http.HandlerFunc {
 		var data []commentReturn
 
 		for rows.Next() {
-			err = rows.Scan(&commenter, &comment, &timing)
+			err = rows.Scan(&commentID, &commenter, &comment, &timing)
 			if err != nil {
 				http.Error(writer, "Failed to scan", http.StatusInternalServerError)
+				return
 			}
-			var comments commentReturn = commentReturn{commenter, comment, timing}
+			var comments commentReturn = commentReturn{commentID, commenter, comment, timing}
 			data = append(data, comments)
 		}
 
 		if len(data) == 0 {
-			http.Error(writer, "Failed to get posts", http.StatusInternalServerError)
+			http.Error(writer, "Failed to get posts", http.StatusNotFound)
+			return
 		} else {
 			writer.Header().Set("Content-Type", "application/json")
 			writer.WriteHeader(http.StatusOK)

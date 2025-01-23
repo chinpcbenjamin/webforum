@@ -41,7 +41,7 @@ func AddNewUserRequest(db *sql.DB) http.HandlerFunc {
 		if err == sql.ErrNoRows {
 			//okay
 		} else {
-			http.Error(writer, "Username already exists", http.StatusBadRequest)
+			http.Error(writer, "Username already exists", http.StatusConflict)
 			return
 		}
 
@@ -59,20 +59,7 @@ func AddNewUserRequest(db *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		//successfully created database entry, so get the JWT key
-		// jwtToken, err := utils.CreateToken(request.Username)
-		// if err != nil {
-		// 	http.Error(writer, "Failed to add new user", http.StatusInternalServerError)
-		// 	return
-		// }
-
-		writer.Header().Set("Content-Type", "application/json")
 		writer.WriteHeader(http.StatusCreated)
-		// response := RespBody{
-		// 	Message: "User account created",
-		// 	Token:   jwtToken,
-		// }
-		// json.NewEncoder(writer).Encode(response)
 	}
 }
 
@@ -94,7 +81,7 @@ func UserSignIn(db *sql.DB) http.HandlerFunc {
 		err := result.Scan()
 
 		if err == sql.ErrNoRows {
-			http.Error(writer, "Username not found", http.StatusBadRequest)
+			http.Error(writer, "Username not found", http.StatusUnauthorized)
 			return
 		}
 
@@ -106,7 +93,7 @@ func UserSignIn(db *sql.DB) http.HandlerFunc {
 		err = bcrypt.CompareHashAndPassword(hashed, []byte(request.Password))
 
 		if err != nil {
-			http.Error(writer, "Password did not match", http.StatusBadRequest)
+			http.Error(writer, "Password did not match", http.StatusUnauthorized)
 			return
 		}
 

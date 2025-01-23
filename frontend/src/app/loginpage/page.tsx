@@ -78,7 +78,9 @@ export default function LoginPage() {
                     if (response.status == 500) {
                         setMessage("Internal Server Error. Please try again.")
                     } else if (response.status == 400) {
-                        setMessage("Error. Failed to receive username and password, or username already exist.")
+                        setMessage("Error. Failed to receive username and password.")
+                    } else if (response.status == 409) {
+                        setMessage("Username already exists.")
                     } else {
                         setMessage("Error. Please try again.")
                     }
@@ -118,7 +120,9 @@ export default function LoginPage() {
                     setMessage("Internal Server Error. Please try again.")
                 } else if (response.status == 400) {
                     setMessage("Error. Invalid Username or Password")
-                } else {
+                } else if (response.status == 401) {
+                    setMessage("Error. Username not found or Password did not match.")
+                }else {
                     setMessage("Error. Please try again.")
                 }
             }
@@ -126,14 +130,6 @@ export default function LoginPage() {
             setMessageType(0)
             setMessageAlert(true)
             setMessage(error)
-        }
-    }
-
-    const get_cookie_token : () => void = async () => {
-        try {
-            const response = await fetch("http://192.168.1.9:3001/token")
-        } catch (error) {
-            console.log(error)
         }
     }
 
