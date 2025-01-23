@@ -53,7 +53,7 @@ export default function forum() {
         } else {
             try {
                 setLoading(true)
-                const response = await fetch("http://localhost:3001/new-post", {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/new-post`, {
                     method : "POST",
                     headers: {
                         'Content-Type' : 'application/json'
@@ -104,7 +104,7 @@ export default function forum() {
         } else {
             try {
                 setLoading(true)
-                const response = await fetch("http://localhost:3001/update-post", {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/update-post`, {
                     method : "PATCH",
                     headers: {
                         'Content-Type' : 'application/json'

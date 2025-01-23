@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/chinpcbenjamin/webforum/backend/internal/db"
 	"github.com/chinpcbenjamin/webforum/backend/internal/handlers"
@@ -23,9 +24,15 @@ func main() {
 		log.Fatal("no JWT key")
 	}
 
+	allowed_origins := os.Getenv("ALLOWED_ORIGINS")
+	if allowed_origins == "" {
+		log.Fatal("no ALLOWED_ORIGINS variable")
+	}
+	origins := strings.Split(allowed_origins, ",")
+
 	r := chi.NewRouter()
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedOrigins:   origins,
 		AllowedMethods:   []string{"POST", "GET", "DELETE", "PATCH"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
@@ -53,5 +60,10 @@ func main() {
 	r.Patch("/update-post", handlers.UpdatePost(db.Get_Database()))
 	r.Patch("/update-comment", handlers.UpdateComment(db.Get_Database()))
 
-	http.ListenAndServe(":3001", r)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "3001"
+	}
+
+	http.ListenAndServe(":"+port, r)
 }

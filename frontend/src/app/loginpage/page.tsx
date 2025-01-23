@@ -56,7 +56,7 @@ export default function LoginPage() {
         } else {
             // send request to backend
             try {
-                const response = await fetch("http://localhost:3001/new-user", {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/new-user`, {
                     method: "POST",
                     headers: {
                         'Content-Type': 'application/json'
@@ -95,7 +95,7 @@ export default function LoginPage() {
 
     const attempt_user_sign_in : () => void = async () => {
         try {
-            const response = await fetch("http://localhost:3001/sign-in", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/sign-in`, {
                 method: "POST",
                 headers: {
                     'Content-Type': 'application/json'

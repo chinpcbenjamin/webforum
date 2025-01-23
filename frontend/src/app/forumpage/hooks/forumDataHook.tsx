@@ -27,7 +27,7 @@ export default function ForumDataHook() {
     useEffect(() => {
         const verify_user : () => void = async () => {
             try {
-                const response = await fetch("http://localhost:3001/verify", {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/verify`, {
                     method: "POST",
                     headers: {
                         'Content-Type' : 'application/json'
@@ -55,7 +55,7 @@ export default function ForumDataHook() {
     const retrieveForumData : () => void = async () => {
         try {
             setLoading(true)
-            const response = await fetch("http://localhost:3001/get-forum-data", {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/get-forum-data`, {
                 method: "GET",
             })
             if (response.ok) {
@@ -89,7 +89,7 @@ export default function ForumDataHook() {
         } else {
             try {
                 setLoading(true)
-                const response = await fetch("http://localhost:3001/new-comment", {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/new-comment`, {
                     method: "POST",
                     headers: {
                         'Content-Type' : 'application/json'
@@ -125,7 +125,7 @@ export default function ForumDataHook() {
         }
         try {
             setLoading(true)
-            const response = await fetch(`http://localhost:3001/get-comments?postID=${data[index].postid}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/get-comments?postID=${data[index].postid}`, {
                 method: "GET"
             })
             if (response.ok) {
@@ -152,7 +152,7 @@ export default function ForumDataHook() {
         }
         try {
             setLoading(true)
-            const response = await fetch(`http://localhost:3001/delete-post?postID=${data[index].postid}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/delete-post?postID=${data[index].postid}`, {
                 method: "DELETE"
             })
             if (response.ok) {
@@ -176,7 +176,7 @@ export default function ForumDataHook() {
         const transformedArray = filterArray.map(x => x ? "1" : "0").join()
         try {
             setLoading(true)
-            const response = await fetch(`http://localhost:3001/filtered-posts?keywords=${keywords}&category=${transformedArray}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/filtered-posts?keywords=${keywords}&category=${transformedArray}`, {
                 method: "GET"
             })
             if (response.status == 404) {
@@ -202,7 +202,7 @@ export default function ForumDataHook() {
     const userPosts = async () => {
         try {
             setLoading(true)
-            const response = await fetch(`http://localhost:3001/user-posts?user=${user}`, {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user-posts?user=${user}`, {
                 method: "GET",
             })
             if (response.status == 404) {
@@ -231,7 +231,7 @@ export default function ForumDataHook() {
         } else {
             try {
                 setLoading(true)
-                const response = await fetch(`http://localhost:3001/delete-comment?commentID=${commentData[index].commentID}`, {
+                const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/delete-comment?commentID=${commentData[index].commentID}`, {
                     method: "DELETE"
                 })
                 if (response.ok) {
@@ -258,7 +258,7 @@ export default function ForumDataHook() {
             setCommentError(true)
         } else {
             try {
-                const response = await fetch("http://localhost:3001/update-comment", {
+                const response = await fetch("${process.env.NEXT_PUBLIC_API_URL}/update-comment", {
                     method: "PATCH",
                     headers: {
                         'Content-Type' : 'application/json'
