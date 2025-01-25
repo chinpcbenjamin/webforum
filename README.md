@@ -1,13 +1,12 @@
 Deployed Website using Render: https://benjamins-web-forum-frontend.onrender.com/
+
 Full READme : https://drive.google.com/file/d/1VpusQwrFfQp-3BZ49uJf8fCc-ZvVr3SY/view?usp=sharing
 
 Project Scope
-
 My website Benjamin’s Web Forum provides users a simple, easy-to-understand platform for sharing and discussing ideas. It provides users with the ability to sign in, create, comment on, and search for various discussions made by other users of the forum. Users can also update or delete their posts or comments at any time.
 
 
-Target Users
-
+Target Users:
 The target users of this website are anyone looking to have a discussion online. The website provides a platform for people to communicate with others. Users could make use of this to ask for or provide help to others, or in any other case, just learn more through the facilitation of discussion on the website.
 
 
