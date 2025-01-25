@@ -46,5 +46,3 @@ In the “frontend” folder, run the command as follows:
 npm run dev
 
 If there are no issues, you can click on the ‘http://localhost:3000’, or go into the browser and enter ‘http://localhost:3000’ to access the application.
-![image](https://github.com/user-attachments/assets/b163e693-8194-4fbc-bef3-0a0b88d94613)
-
